@@ -67,7 +67,7 @@ Print them and how many times they are repeated.
 
 ### Commands
 
-This example uses metadata for the files from the [happypenguin.com 2013 data dump](https://archive.org/details/happypenguin_xml_dump_2013).
+This example uses the files from the [happypenguin.com 2013 data dump](https://archive.org/details/happypenguin_xml_dump_2013) to generate metadata.
 
     # Generate input files -- see below
     cd happypenguin_dump/screenshots
@@ -76,7 +76,7 @@ This example uses metadata for the files from the [happypenguin.com 2013 data du
     # Perform query
     sqawk 'select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5' MD5SUMS list
 
-You don't have to download the data yourself to generate `MD5SUMS` and `list`; the files  can be found in the directory `[examples/](./examples/)`.
+You don't have to download the data yourself to recreate `MD5SUMS` and `list`; the files  can be found in the directory [`examples/`](./examples/).
 
 ### Input files
 
