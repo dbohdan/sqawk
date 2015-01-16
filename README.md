@@ -48,6 +48,10 @@ Table names are `t1`, `t2`, etc. Fields are named `f1`, `f2`, etc. `f0` is the w
 
     sqlawk -1 -OFS ' -- ' 'select f0, count(*) from t1 group by f0 having count(*) > 1' < file
 
+## Remove blank lines
+
+    sqlawk -1 -RS '[\n]+' 'select f0 from t1' < file
+
 ### Sample output
 
     13 -- 2
