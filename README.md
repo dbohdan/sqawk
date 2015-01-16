@@ -24,7 +24,7 @@ or
 
 ## SQL
 
-Table names are `a`, `b`, `c`, etc. The fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is raw text of the whole record (i.e., input line) for each record. `nr` is the record number, 'nf' is the field count.
+Table names are `a`, `b`, `c`, etc. The table name is used as a prefix in its fields' names, the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is raw text of the whole record (i.e., input line) for each record. `anr`, `bnr` and so on contain the record number. `anf`, `bnf` and so on contain the field count.
 
 # Examples
 

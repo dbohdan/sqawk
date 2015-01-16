@@ -9,7 +9,7 @@ package require textutil
 package require sqlite3
 
 namespace eval sqlawk {
-    variable version 0.3.0
+    variable version 0.3.1
 
     proc create-database {database} {
         file delete /tmp/sqlawk.db
@@ -18,9 +18,9 @@ namespace eval sqlawk {
 
     proc create-table {database table keyPrefix maxNR} {
         set query {
-            CREATE TABLE %s(
-                nr INTEGER PRIMARY KEY,
-                nf INTEGER,
+            CREATE TABLE ${table}(
+                ${keyPrefix}nr INTEGER PRIMARY KEY,
+                ${keyPrefix}nf INTEGER,
                 %s
             )
         }
@@ -28,10 +28,10 @@ namespace eval sqlawk {
         for {set i 0} {$i <= $maxNR} {incr i} {
             lappend fields "$keyPrefix$i INTEGER"
         }
-        $database eval [format $query $table [join $fields ","]]
+        $database eval [format [subst -nocommands $query] [join $fields ","]]
     }
 
-    proc read-data {fileHandle database table keyPrefix FS RS} {
+    proc insert-data-from-file {fileHandle database table keyPrefix FS RS} {
         set insertQuery {
             INSERT INTO %s (%s) VALUES (%s)
         }
@@ -43,7 +43,7 @@ namespace eval sqlawk {
 
         foreach record $records {
             set fields [::textutil::splitx $record $FS]
-            set insertColumnNames "nf,${keyPrefix}0"
+            set insertColumnNames "${keyPrefix}nf,${keyPrefix}0"
             set insertValues  {$nf,$record}
             set nf [llength $fields]
             set i 1
@@ -64,7 +64,6 @@ namespace eval sqlawk {
         $database eval $query results {
             set output {}
             set keys $results(*)
-            #parray results
             foreach key $keys {
                 lappend output $results($key)
             }
@@ -72,15 +71,13 @@ namespace eval sqlawk {
         }
     }
 
-    proc check-separator-list {filenames sepList} {
-        if {[llength $filenames] != [llength $sepList]} {
-            error "given [llength $sepList] separators for [llength \
-                   $filenames] files"
+    proc check-separator-list {sepList fileCount} {
+        if {$fileCount != [llength $sepList]} {
+            error "given [llength $sepList] separators for $fileCount files"
         }
     }
 
-    proc adjust-separators {key agrKey default filenames} {
-        puts "$key $agrKey $default"
+    proc adjust-separators {key agrKey default fileCount} {
         set keyPresent [expr {$key ne ""}]
         set agrKeyPresent [expr {
             [llength $agrKey] > 0
@@ -98,13 +95,13 @@ namespace eval sqlawk {
 
         # Set $agrKey to the value under $key.
         if {$keyPresent && !$agrKeyPresent} {
-            set agrKey [::struct::list repeat [llength $filenames] $key]
+            set agrKey [::struct::list repeat $fileCount $key]
             set agrKeyPresent 1
         }
 
         # By now agrKey is set.
 
-        check-separator-list $filenames $agrKey
+        check-separator-list $agrKey $fileCount
         return [list $key $agrKey]
     }
 
@@ -134,6 +131,10 @@ namespace eval sqlawk {
         set cmdOptions [::cmdline::getoptions argv $options $usage]
         set query [lindex $argv 0]
         set filenames [lrange $argv 1 end]
+        set fileCount [llength $filenames]
+        if {$fileCount == 0} {
+            set fileCount 1
+        }
 
         if {[dict get $cmdOptions v]} {
             puts $version
@@ -151,7 +152,7 @@ namespace eval sqlawk {
             lassign [adjust-separators [dict get $cmdOptions $key] \
                             [dict get $cmdOptions $agrKey] \
                             [dict get $defaultValues $key] \
-                            $filenames] \
+                            $fileCount] \
                     value \
                     agrValue
             dict set cmdOptions $key $value
@@ -195,7 +196,7 @@ namespace eval sqlawk {
                     $tableName \
                     $tableName \
                     [dict get $settings NR]
-            read-data $fileHandle $databaseHandle $tableName $tableName $FS $RS
+            insert-data-from-file $fileHandle $databaseHandle $tableName $tableName $FS $RS
             incr i
         }
         perform-query $databaseHandle \
