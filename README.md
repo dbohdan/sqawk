@@ -24,33 +24,33 @@ or
 
 ## SQL
 
-Table names are `t1`, `t2`, etc. Fields are named `f1`, `f2`, etc. `f0` is the whole input line. `nr` is the record number, 'nf' is the field count.
+Table names are `a`, `b`, `c`, etc. The fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is raw text of the whole record (i.e., input line) for each record. `nr` is the record number, 'nf' is the field count.
 
 # Examples
 
 ## Summing up numbers
 
-    find . -iname '*.jpg' -type f -printf '%s\n' | sqlawk 'select sum(f1)/1024/1024 from t1'
+    find . -iname '*.jpg' -type f -printf '%s\n' | sqlawk 'select sum(a1)/1024/1024 from a'
 
 ## Line count
 
-    sqlawk 'select count(*) from t1' < file.txt
+    sqlawk 'select count(*) from a' < file.txt
 
 ## Find lines that match a pattern
 
-    ls | sqlawk -1 'select f0 from t1 where glob("*win*", lower(f0))'
+    ls | sqlawk -1 'select a0 from a where glob("*win*", lower(a0))'
 
 ## Shuffle lines
 
-    sqlawk -1 'select f0 from t1 order by random()' < file
+    sqlawk -1 'select a1 from a order by random()' < file
 
 ## Find duplicate lines and print them plus their count
 
-    sqlawk -1 -OFS ' -- ' 'select f0, count(*) from t1 group by f0 having count(*) > 1' < file
+    sqlawk -1 -OFS ' -- ' 'select a0, count(*) from a group by a0 having count(*) > 1' < file
 
 ## Remove blank lines
 
-    sqlawk -1 -RS '[\n]+' 'select f0 from t1' < file
+    sqlawk -1 -RS '[\n]+' 'select a1 from a' < file
 
 ### Sample output
 
@@ -68,7 +68,7 @@ This example uses files from the [happypenguin.com 2013 data dump](https://archi
     cd happypenguin_dump/screenshots
     md5sum * > MD5SUMS
     ls -la > list
-    sqlawk "select t1.f1, t2.f5, t1.f2 from t1 inner join t2 on t1.f2 = t2.f9 where t2.f5 < 10000 order by t2.f5" MD5SUMS list
+    sqlawk 'select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5' MD5SUMS list
 
 ### Input files
 

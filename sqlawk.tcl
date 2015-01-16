@@ -16,7 +16,7 @@ namespace eval sqlawk {
         ::sqlite3 $database /tmp/sqlawk.db
     }
 
-    proc create-table {database table maxNR} {
+    proc create-table {database table keyPrefix maxNR} {
         set query {
             CREATE TABLE %s(
                 nr INTEGER PRIMARY KEY,
@@ -26,12 +26,12 @@ namespace eval sqlawk {
         }
         set fields {}
         for {set i 0} {$i <= $maxNR} {incr i} {
-            lappend fields "f$i INTEGER"
+            lappend fields "$keyPrefix$i INTEGER"
         }
         $database eval [format $query $table [join $fields ","]]
     }
 
-    proc read-data {fileHandle database table FS RS} {
+    proc read-data {fileHandle database table keyPrefix FS RS} {
         set insertQuery {
             INSERT INTO %s (%s) VALUES (%s)
         }
@@ -41,16 +41,16 @@ namespace eval sqlawk {
             set records [lrange $records 0 end-1]
         }
 
-        foreach f0 $records {
-            set fields [::textutil::splitx $f0 $FS]
-            set insertColumnNames {nf,f0}
-            set insertValues {$nf,$f0}
+        foreach record $records {
+            set fields [::textutil::splitx $record $FS]
+            set insertColumnNames "nf,${keyPrefix}0"
+            set insertValues  {$nf,$record}
             set nf [llength $fields]
             set i 1
             foreach field $fields {
-                set f$i $field
-                lappend insertColumnNames "f$i"
-                lappend insertValues "\$f$i"
+                set $keyPrefix$i $field
+                lappend insertColumnNames "$keyPrefix$i"
+                lappend insertValues "\$$keyPrefix$i"
                 incr i
             }
             $database eval [format $insertQuery \
@@ -72,29 +72,44 @@ namespace eval sqlawk {
         }
     }
 
+    proc check-separator-list {filenames sepList} {
+        if {[llength $filenames] != [llength $sepList]} {
+            if {[llength $sepList] == 1} {
+                return [::struct::list repeat [llength $filenames] \
+                        [lindex $sepList 0]]
+            } else {
+                error "given [llength $sepList] separators for [llength \
+                        $filenames] files"
+            }
+        }
+    }
+
     proc process-options {argv} {
         variable version
 
-        set defaultFS {[ \t]+}
-        set defaultRS {\n}
+        set defaultValues {
+            FS {[ \t]+}
+            RS {\n}
+        }
 
         set options [string map \
-                [list %defaultFS $defaultFS %defaultRS $defaultRS] {
-            {FS.arg {%defaultFS} "Input field separator (regexp)"}
-            {RS.arg {%defaultRS} "Input record separator (regexp)"}
-            {FSx.arg {{%defaultFS}}
+                [list %defaultFS %defaultFS %defaultRS %defaultRS] {
+            {FS.arg {} "Input field separator (regexp)"}
+            {RS.arg {} "Input record separator (regexp)"}
+            {FSx.arg {}
                     "Per-file input field separator list (regexp)"}
-            {RSx.arg {{%defaultRS}}
+            {RSx.arg {}
                     "Per-file input record separator list (regexp)"}
             {OFS.arg { } "Output field separator"}
             {ORS.arg {\n} "Output record separator"}
             {NR.arg 10 "Maximum NR value"}
-            {table.arg {t%s} "Table name template"}
             {v "Print version"}
             {1 "One field only. A shortcut for -FS '^$'"}
         }]
         set usage "?options? query ?filename ...?"
         set cmdOptions [::cmdline::getoptions argv $options $usage]
+        set query [lindex $argv 0]
+        set filenames [lrange $argv 1 end]
 
         if {[dict get $cmdOptions v]} {
             puts $version
@@ -103,11 +118,38 @@ namespace eval sqlawk {
         if {[dict get $cmdOptions 1]} {
             dict set cmdOptions FS '^$'
         }
-        if {[dict get $cmdOptions FS] ne $defaultFS} {
-            dict set cmdOptions FSx [list [dict get $cmdOptions FS]]
-        }
-        if {[dict get $cmdOptions RS] ne $defaultRS} {
-            dict set cmdOptions RSx [list [dict get $cmdOptions RS]]
+
+        # The logic for FS and RS default values and FS and RS determining FSx
+        # and RSx if the latter two are not set.
+        foreach key {FS RS} {
+            set agrKey "${key}x"
+            set keyPresent [expr {[dict get $cmdOptions $key] ne ""}]
+            set agrKeyPresent [expr {
+                [llength [dict get $cmdOptions $agrKey]] > 0
+            }]
+
+            if {$keyPresent && $agrKeyPresent} {
+                error "cannot specify -$key and -$agrKey at the same time"
+            }
+
+            # Set key to its default value.
+            if {!$keyPresent && !$agrKeyPresent} {
+                dict set cmdOptions $key [dict get $defaultValues $key]
+                set keyPresent 1
+            }
+
+            # Set $agrKey to the value under $key.
+            if {$keyPresent && !$agrKeyPresent} {
+                dict set cmdOptions $agrKey [list [dict get $cmdOptions $key]]
+                set agrKeyPresent 1
+            }
+
+            # By now agrKey is set. Repeat the value for all files if its length
+            # is 1.
+
+            dict set cmdOptions $agrKey \
+                    [check-separator-list $filenames \
+                            [dict get $cmdOptions $agrKey]]
         }
 
         # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will
@@ -117,9 +159,6 @@ namespace eval sqlawk {
                     [dict get $cmdOptions $option]]
         }
 
-        set query [lindex $argv 0]
-        set filenames [lrange $argv 1 end]
-
         return [list $cmdOptions $query $filenames]
     }
 
@@ -128,7 +167,7 @@ namespace eval sqlawk {
             lassign [process-options $argv] settings script filenames
         } errorMessage]
         if {$error} {
-            puts $errorMessage
+            puts "Error: $errorMessage"
             exit 1
         }
 
@@ -140,14 +179,17 @@ namespace eval sqlawk {
 
         create-database $databaseHandle
 
+        set tableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
         set i 1
         foreach fileHandle $fileHandles \
                 FS [dict get $settings FSx] \
                 RS [dict get $settings RSx] {
-            puts [list  $FS $RS]
-            set tableName [format [dict get $settings table] $i]
-            create-table $databaseHandle $tableName [dict get $settings NR]
-            read-data $fileHandle $databaseHandle $tableName $FS $RS
+            set tableName [lindex $tableNames [expr {$i - 1}]]
+            create-table $databaseHandle \
+                    $tableName \
+                    $tableName \
+                    [dict get $settings NR]
+            read-data $fileHandle $databaseHandle $tableName $tableName $FS $RS
             incr i
         }
         perform-query $databaseHandle \
