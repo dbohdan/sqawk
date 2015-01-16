@@ -74,14 +74,38 @@ namespace eval sqlawk {
 
     proc check-separator-list {filenames sepList} {
         if {[llength $filenames] != [llength $sepList]} {
-            if {[llength $sepList] == 1} {
-                return [::struct::list repeat [llength $filenames] \
-                        [lindex $sepList 0]]
-            } else {
-                error "given [llength $sepList] separators for [llength \
-                        $filenames] files"
-            }
+            error "given [llength $sepList] separators for [llength \
+                   $filenames] files"
         }
+    }
+
+    proc adjust-separators {key agrKey default filenames} {
+        puts "$key $agrKey $default"
+        set keyPresent [expr {$key ne ""}]
+        set agrKeyPresent [expr {
+            [llength $agrKey] > 0
+        }]
+
+        if {$keyPresent && $agrKeyPresent} {
+            error "cannot specify -$key and -$agrKey at the same time"
+        }
+
+        # Set key to its default value.
+        if {!$keyPresent && !$agrKeyPresent} {
+            set key $default
+            set keyPresent 1
+        }
+
+        # Set $agrKey to the value under $key.
+        if {$keyPresent && !$agrKeyPresent} {
+            set agrKey [::struct::list repeat [llength $filenames] $key]
+            set agrKeyPresent 1
+        }
+
+        # By now agrKey is set.
+
+        check-separator-list $filenames $agrKey
+        return [list $key $agrKey]
     }
 
     proc process-options {argv} {
@@ -119,37 +143,19 @@ namespace eval sqlawk {
             dict set cmdOptions FS '^$'
         }
 
+
         # The logic for FS and RS default values and FS and RS determining FSx
         # and RSx if the latter two are not set.
         foreach key {FS RS} {
             set agrKey "${key}x"
-            set keyPresent [expr {[dict get $cmdOptions $key] ne ""}]
-            set agrKeyPresent [expr {
-                [llength [dict get $cmdOptions $agrKey]] > 0
-            }]
-
-            if {$keyPresent && $agrKeyPresent} {
-                error "cannot specify -$key and -$agrKey at the same time"
-            }
-
-            # Set key to its default value.
-            if {!$keyPresent && !$agrKeyPresent} {
-                dict set cmdOptions $key [dict get $defaultValues $key]
-                set keyPresent 1
-            }
-
-            # Set $agrKey to the value under $key.
-            if {$keyPresent && !$agrKeyPresent} {
-                dict set cmdOptions $agrKey [list [dict get $cmdOptions $key]]
-                set agrKeyPresent 1
-            }
-
-            # By now agrKey is set. Repeat the value for all files if its length
-            # is 1.
-
-            dict set cmdOptions $agrKey \
-                    [check-separator-list $filenames \
-                            [dict get $cmdOptions $agrKey]]
+            lassign [adjust-separators [dict get $cmdOptions $key] \
+                            [dict get $cmdOptions $agrKey] \
+                            [dict get $defaultValues $key] \
+                            $filenames] \
+                    value \
+                    agrValue
+            dict set cmdOptions $key $value
+            dict set cmdOptions $agrKey $agrValue
         }
 
         # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will
