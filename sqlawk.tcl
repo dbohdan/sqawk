@@ -1,4 +1,7 @@
 #!/usr/bin/env tclsh
+# SQLAwk
+# Copyright (C) 2015 Danyil Bohdan
+# License: MIT
 package require Tcl 8.5
 package require cmdline
 package require struct
@@ -6,6 +9,8 @@ package require textutil
 package require sqlite3
 
 namespace eval sqlawk {
+    variable version 0.2.1
+
     proc create-database {database} {
         file delete /tmp/sqlawk.db
         ::sqlite3 $database /tmp/sqlawk.db
@@ -62,16 +67,28 @@ namespace eval sqlawk {
     }
 
     proc process-options {argv} {
+        variable version
+
         set options {
             {FS.arg "[ \t]+" "Input field separator (regexp)"}
             {RS.arg "\n" "Input record separator"}
             {OFS.arg " " "Output field separator"}
             {ORS.arg "\n" "Output record separator"}
-            {table.arg {t%s} "Table name"}
+            {table.arg {t%s} "Table name template"}
             {NR.arg 10 "Maximum NR value"}
+            {v "Print version"}
+            {1 "One field only. A shortcut for -FS '^$'"}
         }
         set usage "script ?options? ?filename ...?"
         set cmdOptions [::cmdline::getoptions argv $options $usage]
+
+        if {[dict get $cmdOptions v]} {
+            puts $version
+            exit 0
+        }
+        if {[dict get $cmdOptions 1]} {
+            set set $cmdOptions FS '^$'
+        }
 
         return [list $cmdOptions $argv]
     }
