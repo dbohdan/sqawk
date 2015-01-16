@@ -30,23 +30,23 @@ Table names are `t1`, `t2`, etc. Fields are named `f1`, `f2`, etc. `f0` is the w
 
 ## Summing up numbers
 
-    find . -iname "*.jpg" -type f -printf "%s\n" | sqlawk "select sum(f1)/1024/1024 from t1"
+    find . -iname '*.jpg' -type f -printf '%s\n' | sqlawk 'select sum(f1)/1024/1024 from t1'
 
 ## Line count
 
-    sqlawk "select count(*) from t1" < file.txt
+    sqlawk 'select count(*) from t1' < file.txt
 
 ## Find lines that match a pattern
 
-    ls | sqlawk -FS '^$' 'select f0 from t1 where glob("*win*", lower(f0))'
+    ls | sqlawk -1 'select f0 from t1 where glob("*win*", lower(f0))'
 
 ## Shuffle lines
 
-    sqlawk -FS '^$' 'select f0 from t1 order by random()' < file
+    sqlawk -1 'select f0 from t1 order by random()' < file
 
 ## Find duplicate lines and print them plus their count
 
-    sqlawk -FS '^$' -OFS ' -- ' 'select f0, count(*) from t1 group by f0 having count(*) > 1' < file
+    sqlawk -1 -OFS ' -- ' 'select f0, count(*) from t1 group by f0 having count(*) > 1' < file
 
 ### Sample output
 

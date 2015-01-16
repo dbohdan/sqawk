@@ -87,7 +87,7 @@ namespace eval sqlawk {
             exit 0
         }
         if {[dict get $cmdOptions 1]} {
-            set set $cmdOptions FS '^$'
+            dict set cmdOptions FS '^$'
         }
 
         return [list $cmdOptions $argv]
