@@ -1,26 +1,27 @@
-# SQLAwk
+![A squawk](squawk.jpg)
 
-SQLAwk is an [Awk](http://awk.info/)-like program that can process multiple files at once and uses SQL syntax.
+**Sqawk** is an [Awk](http://awk.info/)-like program that can process multiple files at once and uses SQL syntax.
 
 # Usage
 
-    sqlawk [options] query < filename
-    sqlawk [options] query
+    sqawk [options] query < filename
+    sqawk [options] query
 
 or
 
-    sqlawk [options] query filename1 filename2 ...
+    sqawk [options] query filename1 filename2 ...
 
 ## Options
 
-* -FS value
-* -RS value
-* -OFS value
-* -ORS value
-* -table value
-* -NR value
-* -v
-* -1
+| Option | Example | Comment |
+|--------|---------|---------|
+| -FS value | `-FS '[ \t]+'` | Input field separator. |
+| -RS value | `-RS '\n'` | Input record separator. |
+| -OFS value | `-OFS ' '` | Output field separator. |
+| -ORS value | `-ORS '\n'` | Output record separator. |
+| -NF value | `-NF 10` | Maximum number of fields per record. |
+| -v | | Print Sqawk version. |
+| -1 | | Do not split records into fields. Same as `-F '^$'. Allow you to avoid adjusting `-NF` and do performance optimization for when you only want to operate on lines. |
 
 ## SQL
 
@@ -30,27 +31,27 @@ Table names are `a`, `b`, `c`, etc. The table name is used as a prefix in its fi
 
 ## Summing up numbers
 
-    find . -iname '*.jpg' -type f -printf '%s\n' | sqlawk 'select sum(a1)/1024/1024 from a'
+    find . -iname '*.jpg' -type f -printf '%s\n' | sqawk 'select sum(a1)/1024/1024 from a'
 
 ## Line count
 
-    sqlawk 'select count(*) from a' < file.txt
+    sqawk 'select count(*) from a' < file.txt
 
 ## Find lines that match a pattern
 
-    ls | sqlawk -1 'select a0 from a where glob("*win*", lower(a0))'
+    ls | sqawk -1 'select a0 from a where glob("*win*", lower(a0))'
 
 ## Shuffle lines
 
-    sqlawk -1 'select a1 from a order by random()' < file
+    sqawk -1 'select a1 from a order by random()' < file
 
 ## Find duplicate lines and print them plus their count
 
-    sqlawk -1 -OFS ' -- ' 'select a0, count(*) from a group by a0 having count(*) > 1' < file
+    sqawk -1 -OFS ' -- ' 'select a0, count(*) from a group by a0 having count(*) > 1' < file
 
 ## Remove blank lines
 
-    sqlawk -1 -RS '[\n]+' 'select a1 from a' < file
+    sqawk -1 -RS '[\n]+' 'select a1 from a' < file
 
 ### Sample output
 
@@ -68,7 +69,7 @@ This example uses files from the [happypenguin.com 2013 data dump](https://archi
     cd happypenguin_dump/screenshots
     md5sum * > MD5SUMS
     ls -la > list
-    sqlawk 'select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5' MD5SUMS list
+    sqawk 'select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5' MD5SUMS list
 
 ### Input files
 
@@ -120,7 +121,7 @@ a49a7b5ac5833ec365ed3cb7031d1d84 1458 fncpong.png
 
 # Installation
 
-SQLAwk requires Tcl 8.5 or newer, Tcllib and SQLite version 3 bindings for Tcl.
+Sqawk requires Tcl 8.5 or newer, Tcllib and SQLite version 3 bindings for Tcl.
 
 To install the dependencies on **Debian** and **Ubuntu** run the following command:
 
@@ -139,6 +140,12 @@ On **OS X** use [MacPorts](https://www.macports.org/) or get ActiveTcl from [Act
 
 Then
 
-    git clone <repo>
-    cd <repo>
+    git clone https://github.com/dbohdan/sqawk
+    cd sqawk
     sudo make install ;# install to /usr/local/bin
+
+# License
+
+MIT.
+
+`squawk.jpg` photograph by [Terry Foote](https://en.wikipedia.org/wiki/User:Terry_Foote) at [English Wikipedia](https://en.wikipedia.org/wiki/).

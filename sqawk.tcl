@@ -1,5 +1,5 @@
 #!/usr/bin/env tclsh
-# SQLAwk
+# Sqawk
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 package require Tcl 8.5
@@ -8,39 +8,39 @@ package require struct
 package require textutil
 package require sqlite3
 
-namespace eval sqlawk {
+namespace eval sqawk {
     variable version 0.3.1
 
     proc create-database {database} {
-        file delete /tmp/sqlawk.db
-        ::sqlite3 $database /tmp/sqlawk.db
+        file delete /tmp/sqawk.db
+        ::sqlite3 $database /tmp/sqawk.db
     }
 
-    proc create-table {database table keyPrefix maxNR} {
+    proc create-table {database table keyPrefix maxNF} {
+        set fields {}
         set query {
-            CREATE TABLE ${table}(
+            CREATE TABLE ${table} (
                 ${keyPrefix}nr INTEGER PRIMARY KEY,
                 ${keyPrefix}nf INTEGER,
-                %s
+                [join $fields ","]
             )
         }
-        set fields {}
-        for {set i 0} {$i <= $maxNR} {incr i} {
+        for {set i 0} {$i <= $maxNF} {incr i} {
             lappend fields "$keyPrefix$i INTEGER"
         }
-        $database eval [format [subst -nocommands $query] [join $fields ","]]
+        $database eval [subst $query]
     }
 
     proc insert-data-from-file {fileHandle database table keyPrefix FS RS} {
-        set insertQuery {
-            INSERT INTO %s (%s) VALUES (%s)
-        }
-
         set records [::textutil::splitx [read $fileHandle] $RS]
         if {[lindex $records end] eq ""} {
             set records [lrange $records 0 end-1]
         }
 
+        set insertQuery {
+            INSERT INTO ${table} ([join $insertColumnNames ","])
+            VALUES ([join $insertValues ,])
+        }
         foreach record $records {
             set fields [::textutil::splitx $record $FS]
             set insertColumnNames "${keyPrefix}nf,${keyPrefix}0"
@@ -53,10 +53,7 @@ namespace eval sqlawk {
                 lappend insertValues "\$$keyPrefix$i"
                 incr i
             }
-            $database eval [format $insertQuery \
-                    $table \
-                    [join $insertColumnNames ,] \
-                    [join $insertValues ,]]
+            $database eval [subst $insertQuery]
         }
     }
 
@@ -123,13 +120,16 @@ namespace eval sqlawk {
                     "Per-file input record separator list (regexp)"}
             {OFS.arg { } "Output field separator"}
             {ORS.arg {\n} "Output record separator"}
-            {NR.arg 10 "Maximum NR value"}
+            {NF.arg 10 "Maximum NF value"}
             {v "Print version"}
             {1 "One field only. A shortcut for -FS '^$'"}
         }]
         set usage "?options? query ?filename ...?"
         set cmdOptions [::cmdline::getoptions argv $options $usage]
         set query [lindex $argv 0]
+        if {$query eq ""} {
+            error "no query"
+        }
         set filenames [lrange $argv 1 end]
         set fileCount [llength $filenames]
         if {$fileCount == 0} {
@@ -171,10 +171,10 @@ namespace eval sqlawk {
 
     proc main {argv {databaseHandle db}} {
         set error [catch {
-            lassign [process-options $argv] settings script filenames
+            lassign [process-options $argv] settings query filenames
         } errorMessage]
         if {$error} {
-            puts "Error: $errorMessage"
+            puts "error: $errorMessage"
             exit 1
         }
 
@@ -195,15 +195,16 @@ namespace eval sqlawk {
             create-table $databaseHandle \
                     $tableName \
                     $tableName \
-                    [dict get $settings NR]
-            insert-data-from-file $fileHandle $databaseHandle $tableName $tableName $FS $RS
+                    [dict get $settings NF]
+            insert-data-from-file $fileHandle $databaseHandle $tableName \
+                    $tableName $FS $RS
             incr i
         }
         perform-query $databaseHandle \
-                $script \
+                $query \
                 [dict get $settings OFS] \
                 [dict get $settings ORS]
     }
 }
 
-::sqlawk::main $argv
+::sqawk::main $argv

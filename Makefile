@@ -1,3 +1,3 @@
 install:
-	cp sqlawk.tcl /usr/local/bin/squawk
-	chmod +x /usr/local/bin/squawk
+	cp sqawk.tcl /usr/local/bin/sqawk
+	chmod +x /usr/local/bin/sqawk
