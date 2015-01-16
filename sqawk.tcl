@@ -9,11 +9,18 @@ package require textutil
 package require sqlite3
 
 namespace eval sqawk {
-    variable version 0.3.1
+    variable version 0.3.2
+    variable debug 0
 
     proc create-database {database} {
-        file delete /tmp/sqawk.db
-        ::sqlite3 $database /tmp/sqawk.db
+        variable debug
+
+        if {$debug} {
+            file delete /tmp/sqawk.db
+            ::sqlite3 $database /tmp/sqawk.db
+        } else {
+            ::sqlite3 $database :memory:
+        }
     }
 
     proc create-table {database table keyPrefix maxNF} {
@@ -196,8 +203,10 @@ namespace eval sqawk {
                     $tableName \
                     $tableName \
                     [dict get $settings NF]
-            insert-data-from-file $fileHandle $databaseHandle $tableName \
-                    $tableName $FS $RS
+            $databaseHandle transaction {
+                insert-data-from-file $fileHandle $databaseHandle $tableName \
+                        $tableName $FS $RS
+            }
             incr i
         }
         perform-query $databaseHandle \
