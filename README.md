@@ -1,6 +1,6 @@
 ![A squawk](squawk.jpg)
 
-**Sqawk** is an [Awk](http://awk.info/)-like program that can process multiple files at once and uses SQL syntax. It is powered by SQLite.
+**Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from many files. It is powered by SQLite.
 
 # Usage
 
@@ -26,7 +26,7 @@ or
 
 ## SQL
 
-The table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contains the field count for a given record.
+The table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contain the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contain the field count for a given record.
 
 # Examples
 

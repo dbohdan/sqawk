@@ -9,7 +9,7 @@ package require textutil
 package require sqlite3
 
 namespace eval sqawk {
-    variable version 0.3.2
+    variable version 0.3.3
     variable debug 0
 
     proc create-database {database} {
@@ -81,10 +81,10 @@ namespace eval sqawk {
         }
     }
 
-    proc adjust-separators {key agrKey default fileCount} {
-        set keyPresent [expr {$key ne ""}]
+    proc adjust-separators {key sep agrKey sepList default fileCount} {
+        set keyPresent [expr {$sep ne ""}]
         set agrKeyPresent [expr {
-            [llength $agrKey] > 0
+            [llength $sepList] > 0
         }]
 
         if {$keyPresent && $agrKeyPresent} {
@@ -93,20 +93,20 @@ namespace eval sqawk {
 
         # Set key to its default value.
         if {!$keyPresent && !$agrKeyPresent} {
-            set key $default
+            set sep $default
             set keyPresent 1
         }
 
         # Set $agrKey to the value under $key.
         if {$keyPresent && !$agrKeyPresent} {
-            set agrKey [::struct::list repeat $fileCount $key]
+            set sepList [::struct::list repeat $fileCount $sep]
             set agrKeyPresent 1
         }
 
-        # By now agrKey is set.
+        # By now sepList has been set.
 
-        check-separator-list $agrKey $fileCount
-        return [list $key $agrKey]
+        check-separator-list $sepList $fileCount
+        return [list $sep $sepList]
     }
 
     proc process-options {argv} {
@@ -156,7 +156,9 @@ namespace eval sqawk {
         # and RSx if the latter two are not set.
         foreach key {FS RS} {
             set agrKey "${key}x"
-            lassign [adjust-separators [dict get $cmdOptions $key] \
+            lassign [adjust-separators $key \
+                            [dict get $cmdOptions $key] \
+                            $agrKey \
                             [dict get $cmdOptions $agrKey] \
                             [dict get $defaultValues $key] \
                             $fileCount] \
