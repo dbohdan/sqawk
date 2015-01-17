@@ -1,14 +1,14 @@
 ![A squawk](squawk.jpg)
 
-**Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from many files. It is powered by SQLite.
+**Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
 # Usage
 
-    sqawk [options] query < filename
+    sqawk [options] script < filename
 
 or
 
-    sqawk [options] query filename1 [filename2 ...]
+    sqawk [options] script filename1 [filename2 ...]
 
 ## Options
 
@@ -72,11 +72,11 @@ This example uses the files from the [happypenguin.com 2013 data dump](https://a
     # Generate input files -- see below
     cd happypenguin_dump/screenshots
     md5sum * > MD5SUMS
-    ls -la > list
+    du -b * > du-bytes
     # Perform query
-    sqawk 'select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5' MD5SUMS list
+    sqawk 'select a1, b1, a2 from a inner join b on a2 = b2 where b1 < 10000 order by b1' MD5SUMS du-bytes' MD5SUMS du-bytes
 
-You don't have to download the data yourself to recreate `MD5SUMS` and `list`; the files  can be found in the directory [`examples/`](./examples/).
+You don't have to download the data yourself to recreate `MD5SUMS` and `du-bytes`; the files  can be found in the directory [`examples/`](./examples/).
 
 ### Input files
 
@@ -91,23 +91,20 @@ e2ab70817194584ab6fe2efc3d8987f6  0.0.6-settings.png
 0be1582d861f9d047f4842624e7d01bb  012771602077.png
 60638f91b399c78a8b2d969adeee16cc  014tiles.png
 7e7a0b502cd4d63a7e1cda187b122b0b  017.jpg
-1e958dfe8f99de90bb8a9520a0181f51  01newscreenie.jpeg
-f56fb95efa84fbfdd8e01222b4a58029  02_characterselect.jpg
 [...]
 ```
 
-#### list
+#### du-bytes
 
 ```
-drwxr-xr-x. 2 dbohdan dbohdan   94208 Apr  7  2013 .
-drwxr-xr-x. 4 dbohdan dbohdan    4096 Apr 14  2014 ..
--rw-r--r--. 1 dbohdan dbohdan  136229 Apr  7  2013 0005.jpg
--rw-r--r--. 1 dbohdan dbohdan  112600 Apr  7  2013 001.jpg
--rw-r--r--. 1 dbohdan dbohdan   26651 Apr  7  2013 0.0.6-settings.png
--rw-r--r--. 1 dbohdan dbohdan  155579 Apr  7  2013 010_2.jpg
--rw-r--r--. 1 dbohdan dbohdan   41485 Apr  7  2013 0.10-planets.jpg
--rw-r--r--. 1 dbohdan dbohdan 2758972 Apr  7  2013 012771602077.png
--rw-r--r--. 1 dbohdan dbohdan  426774 Apr  7  2013 014tiles.png
+136229  0005.jpg
+112600  001.jpg
+26651   0.0.6-settings.png
+155579  010_2.jpg
+41485   0.10-planets.jpg
+2758972 012771602077.png
+426774  014tiles.png
+165354  017.jpg
 [...]
 ```
 
@@ -121,10 +118,10 @@ a0fb29411c169603748edcc02c0e86e6 823 agendaroids.gif
 05f89f23756e8ea4bc5379c841674a6e 999 retropong.png
 a49a7b5ac5833ec365ed3cb7031d1d84 1458 fncpong.png
 80616256c790c2a831583997a6214280 1516 el2_small.jpg
-1eee29eaef2ae740d04ad4ee6d140db7 1575 thrust-0.89f.gif
-19edfd5a70c9e029b9c601ccb17c4d12 1665 xrockman.png
-4e1105deeeba96e7b935aa07e2066d89 1741 xroarsnap.png
 [...]
+1c8a3cb2811e9c20572e8629c513326d 9852 7.png
+c53a88c68b73f3c1632e3cdc7a0b4e49 9915 choosing_building.PNG
+bf60508db16a92a46bbd4107f15730cd 9946 glad_shot01.jpg
 ```
 
 # Installation

@@ -9,7 +9,7 @@ package require textutil
 package require sqlite3
 
 namespace eval sqawk {
-    variable version 0.3.3
+    variable version 0.3.4
     variable debug 0
 
     proc create-database {database} {
@@ -64,6 +64,14 @@ namespace eval sqawk {
         }
     }
 
+    proc output {data} {
+        # Do not throw an error if stdout is closed during output (e.g., if
+        # someone is piping the output to head(1)).
+        catch {
+            puts -nonewline $data
+        }
+    }
+
     proc perform-query {database query OFS ORS} {
         $database eval $query results {
             set output {}
@@ -71,7 +79,7 @@ namespace eval sqawk {
             foreach key $keys {
                 lappend output $results($key)
             }
-            puts -nonewline [join $output $OFS]$ORS
+            output [join $output $OFS]$ORS
         }
     }
 
@@ -131,11 +139,11 @@ namespace eval sqawk {
             {v "Print version"}
             {1 "One field only. A shortcut for -FS '^$'"}
         }]
-        set usage "?options? query ?filename ...?"
+        set usage "?options? script ?filename ...?"
         set cmdOptions [::cmdline::getoptions argv $options $usage]
-        set query [lindex $argv 0]
-        if {$query eq ""} {
-            error "no query"
+        set script [lindex $argv 0]
+        if {$script eq ""} {
+            error "empty script"
         }
         set filenames [lrange $argv 1 end]
         set fileCount [llength $filenames]
@@ -175,12 +183,12 @@ namespace eval sqawk {
                     [dict get $cmdOptions $option]]
         }
 
-        return [list $cmdOptions $query $filenames]
+        return [list $cmdOptions $script $filenames]
     }
 
     proc main {argv {databaseHandle db}} {
         set error [catch {
-            lassign [process-options $argv] settings query filenames
+            lassign [process-options $argv] settings script filenames
         } errorMessage]
         if {$error} {
             puts "error: $errorMessage"
@@ -212,7 +220,7 @@ namespace eval sqawk {
             incr i
         }
         perform-query $databaseHandle \
-                $query \
+                $script \
                 [dict get $settings OFS] \
                 [dict get $settings ORS]
     }

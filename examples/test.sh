@@ -1,8 +1,23 @@
 #!/bin/sh
 set -e
-dir="$(dirname $(readlink -f $0))"
-tempfilename="/tmp/sqawk-test-results"
+
+dir=$(dirname "$(readlink -f $0)")
+temp_file="/tmp/sqawk-test-results"
+sqawk=$(readlink -f "$dir"/../sqawk.tcl)
+
 cd "$dir"
-../sqawk.tcl "select a.a1, b.b5, a.a2 from a inner join b on a.a2 = b.b9 where b.b5 < 10000 order by b.b5" MD5SUMS list > $tempfilename
-diff $tempfilename results.correct
-rm $tempfilename
+
+run_test() {
+    test_dir="$1"
+    cd "$test_dir"
+    echo "* running test from directory \"$test_dir/\""
+    tail -n 1 command
+    sh command "$sqawk" > "$temp_file"
+    diff "$temp_file" results.correct && echo ok
+    cd ..
+}
+
+run_test "hp"
+run_test "three-files"
+
+rm "$temp_file"
