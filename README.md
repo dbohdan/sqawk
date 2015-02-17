@@ -1,5 +1,7 @@
 ![A squawk](squawk.jpg)
 
+[![Build Status](https://travis-ci.org/dbohdan/sqawk.svg?branch=master)](https://travis-ci.org/dbohdan/sqawk)
+
 **Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
 # Usage
