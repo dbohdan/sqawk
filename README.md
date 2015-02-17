@@ -63,6 +63,39 @@ Print them and how many times they are repeated.
 
     sqawk -1 -RS '[\n]+' 'select a0 from a' < file
 
+## Sum up numbers with the same key
+
+    sqawk -FS , -OFS , 'select a1, sum(a2) from a group by a1' data
+
+This is the equivalent of the Awk code
+
+    awk 'BEGIN { FS = OFS = ","} { s[$1] += $2 }; END { for(key in s) { print key, s[key]; } }' data
+
+### Input
+
+```
+1015,5
+1015,4
+1035,17
+1035,11
+1009,1
+1009,4
+1026,9
+1004,5
+1004,5
+1009,1
+```
+
+### Output
+
+```
+1004,10
+1009,6
+1015,9
+1026,9
+1035,28
+```
+
 ## Combine data from two files
 
 ### Commands
