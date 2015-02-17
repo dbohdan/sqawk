@@ -107,7 +107,7 @@ This example uses the files from the [happypenguin.com 2013 data dump](https://a
     md5sum * > MD5SUMS
     du -b * > du-bytes
     # Perform query
-    sqawk 'select a1, b1, a2 from a inner join b on a2 = b2 where b1 < 10000 order by b1' MD5SUMS du-bytes' MD5SUMS du-bytes
+    sqawk 'select a1, b1, a2 from a inner join b on a2 = b2 where b1 < 10000 order by b1' MD5SUMS du-bytes
 
 You don't have to download the data yourself to recreate `MD5SUMS` and `du-bytes`; the files  can be found in the directory [`examples/`](./examples/).
 
