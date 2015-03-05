@@ -10,14 +10,14 @@ package require sqlite3
 
 namespace eval sqawk {
     variable version 0.3.5
-    variable debug 1
+    variable debug 0
 
     proc create-database {database} {
         variable debug
 
         if {$debug} {
-            file delete /var/tmp/sqawk.db
-            ::sqlite3 $database /var/tmp/sqawk.db
+            file delete /tmp/sqawk.db
+            ::sqlite3 $database /tmp/sqawk.db
         } else {
             ::sqlite3 $database :memory:
         }
