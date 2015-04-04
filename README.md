@@ -42,7 +42,7 @@ The table names are `a` for the first input file, `b` for the second, `c` for th
 
 ## Find lines that match a pattern
 
-    ls | sqawk -1 'select a0 from a where glob("*win*", lower(a0))'
+    ls | sqawk -1 'select a0 from a where a0 like "%win%"'
 
 ## Shuffle lines
 
