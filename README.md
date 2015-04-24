@@ -6,11 +6,11 @@
 
 # Usage
 
-    sqawk [options] script < filename
+`sqawk [options] script [setting=value ...] < filename`
 
 or
 
-    sqawk [options] script filename1 [filename2 ...]
+`sqawk [options] script [setting=value ...] filename1 [[setting=value ...] filename2 ...]`
 
 ## Options
 
@@ -18,8 +18,6 @@ or
 |--------|---------|---------|
 | -FS value | `-FS '[ \t]+'` | Input field separator (one for all input files). |
 | -RS value | `-RS '\n'` | Input record separator (one for all input files). |
-| -FSx value | `-FSx '{,[ ]*} {[ \t]+}`' | A list of field separators with one for each input file. Each list item must be enclosed in `{...}`. |
-| -RSx value | `-RSx '{\n} {\n}'` | A list of record separators with one for each input file. Each list item must be enclosed in `{...}`. |
 | -OFS value | `-OFS ' '` | Output field separator. |
 | -ORS value | `-ORS '\n'` | Output record separator. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get the error `table x has no column named x51`. |
