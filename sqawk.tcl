@@ -1,12 +1,11 @@
 #!/usr/bin/env tclsh
-# Sqawk
+# Sqawk, an SQL Awk.
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 package require Tcl 8.5
 package require cmdline
 package require snit 2
 package require sqlite3
-package require struct
 package require textutil
 
 namespace eval ::sqawk {
@@ -21,6 +20,10 @@ namespace eval ::sqawk::script {
     option -dbtable
     option -keyprefix
     option -maxnf
+
+    destructor {
+        [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
+    }
 
     # Create DB tables.
     method initialize {} {
@@ -38,10 +41,6 @@ namespace eval ::sqawk::script {
             lappend fields "$keyPrefix$i INTEGER"
         }
         [$self cget -database] eval [subst $command]
-    }
-
-    destructor {
-        [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
     }
 
     # Read data from $channel.
@@ -87,7 +86,7 @@ namespace eval ::sqawk::script {
         }
     }
 
-    # Read data from file specified in the dictionary $fileData into a new
+    # Read data from the file specified in the dictionary $fileData into a new
     # database table.
     method read-file fileData {
         set tableName [lindex $defaultTableNames [dict size $tables]]
@@ -197,11 +196,12 @@ proc ::sqawk::script::process-options {argv} {
     set currentFileSettings $defaultFileSettings
     while {[llength $argv] > 0} {
         lassign [lshift! argv] elem
-        # VAR=VALUE
+        # setting=value
         if {[regexp {([^=]+)=(.*)} $elem _ key value]} {
             dict set currentFileSettings $key $value
         } else {
-            if {[file exists $elem] || $elem eq "-"} {
+            # Filename.
+            if {[file exists $elem] || ($elem eq "-")} {
                 dict set currentFileSettings filename $elem
                 lappend fileSettings $currentFileSettings
                 set currentFileSettings $defaultFileSettings
@@ -211,7 +211,8 @@ proc ::sqawk::script::process-options {argv} {
             }
         }
     }
-    # stdin settings
+    # If not files are given add "-" (standard input) with the current settings
+    # to fileSettings.
     if {$fileCount == 0} {
         dict set currentFileSettings filename -
         lappend fileSettings $currentFileSettings
