@@ -12,9 +12,9 @@ namespace eval ::sqawk::tests {
         cd $path
     }} $path]
 
-    # Create and open temporary files (read/write), run a script then close and delete the
-    # files. $args is a list of the format {fnVarName1 chVarName1 fnVarName2
-    # chVarName2 ... script}.
+    # Create and open temporary files (read/write), run a script then close and
+    # delete the files. $args is a list of the format {fnVarName1 chVarName1
+    # fnVarName2 chVarName2 ... script}.
     proc with-temp-files args {
         set files {}
         set channels {}
@@ -23,14 +23,13 @@ namespace eval ::sqawk::tests {
         foreach {fnVarName chVarName} [lrange $args 0 end-1] {
             set filename [::fileutil::tempfile]
             uplevel 1 [list set $fnVarName $filename]
-            set upvars_$fnVarName filename
+            lappend files $filename
             if {$chVarName ne ""} {
                 set channel [open $filename w+]
                 uplevel 1 [list set $chVarName $channel]
                 lappend channels $channel
             }
         }
-
         uplevel 1 $script
 
         foreach channel $channels {
