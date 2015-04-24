@@ -91,23 +91,17 @@ namespace eval ::sqawk::script {
         [dict get $tables $tableName] insert-data-from-channel $channel $FS $RS
     }
 
-    method output {data} {
-        # Do not throw an error if stdout is closed during output (e.g., if
-        # someone is piping the output to head(1)).
-        catch {
-            puts -nonewline $data
-        }
-    }
-
     # Perform query $query and print the result.
-    method perform-query {query} {
+    method perform-query {query {channel stdout}} {
+        # For each row returned...
         [$self cget -database] eval $query results {
             set output {}
             set keys $results(*)
             foreach key $keys {
                 lappend output $results($key)
             }
-            $self output [join $output [$self cget -ofs]][$self cget -ors]
+            set outputRecord [join $output [$self cget -ofs]][$self cget -ors]
+            puts -nonewline $channel $outputRecord
         }
     }
 }
@@ -269,7 +263,14 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
         $obj insert-data-from-channel $fileHandle $tableName $FS $RS
         incr i
     }
-    $obj perform-query $script
+    set error [catch { $obj perform-query $script } errorMessage errorOptions]
+    if {$error} {
+        # Ignore errors caused by stdout being closed during output (e.g., if
+        # someone is piping the output to head(1)).
+        if {[lrange [dict get $errorOptions -errorcode] 0 1] ne {POSIX EPIPE}} {
+            return -options $errorOptions $errorMessage
+        }
+    }
     $obj destroy
 }
 

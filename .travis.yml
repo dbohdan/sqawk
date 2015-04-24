@@ -5,4 +5,4 @@ install:
 - sudo apt-get -y install tcl tcllib libsqlite3-tcl
 before_script:
 - chmod +x examples/test.sh
-script: "./examples/test.sh"
+script: make test
