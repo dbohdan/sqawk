@@ -72,16 +72,21 @@ namespace eval ::sqawk::script {
     }
 }
 
+proc ::sqawk::dict-ensure-default {dictVarName key value} {
+    upvar 1 $dictVarName dictionary
+    set dictionary [dict merge [list $key $value] $dictionary]
+}
+
 ::snit::type ::sqawk::sqawk {
     variable tables {}
     variable defaultTableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
 
     option -database
-    option -ofs { }
-    option -ors {\n}
+    option -ofs
+    option -ors
 
     destructor {
-        foreach {_ tableObj} $tables {
+        dict for {_ tableObj} q$tables {
             $tableObj destroy
         }
     }
@@ -89,25 +94,29 @@ namespace eval ::sqawk::script {
     # Read data from the file specified in the dictionary $fileData into a new
     # database table.
     method read-file fileData {
-        set tableName [lindex $defaultTableNames [dict size $tables]]
+        # Default table name ("a", "b", "c", ..., "z").
+        set defaultTableName [lindex $defaultTableNames [dict size $tables]]
+        ::sqawk::dict-ensure-default fileData table $defaultTableName
+        # Default keyprefix (equal to table name).
+        ::sqawk::dict-ensure-default fileData prefix [dict get $fileData table]
+
+        array set data $fileData
+
+        # Make a new table.
         set newTable [::sqawk::table create %AUTO%]
         $newTable configure -database [$self cget -database]
-        $newTable configure -dbtable $tableName
-        $newTable configure -keyprefix $tableName
-        $newTable configure -maxnf [dict get $fileData NF]
+        $newTable configure -dbtable $data(table)
+        $newTable configure -keyprefix $data(prefix)
+        $newTable configure -maxnf $data(NF)
         $newTable initialize
-        set filename [dict get $fileData filename]
-        if {$filename eq "-"} {
+        if {$data(filename) eq "-"} {
             set ch stdin
         } else {
-            set ch [open $filename]
+            set ch [open $data(filename)]
         }
-        $newTable insert-data-from-channel \
-                $ch \
-                [dict get $fileData FS] \
-                [dict get $fileData RS]
+        $newTable insert-data-from-channel $ch $data(FS) $data(RS)
         close $ch
-        dict set tables $tableName $newTable
+        dict set tables $data(table) $newTable
         return $newTable
     }
 
@@ -211,7 +220,7 @@ proc ::sqawk::script::process-options {argv} {
             }
         }
     }
-    # If not files are given add "-" (standard input) with the current settings
+    # If no files are given add "-" (standard input) with the current settings
     # to fileSettings.
     if {$fileCount == 0} {
         dict set currentFileSettings filename -

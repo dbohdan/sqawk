@@ -24,6 +24,11 @@ or
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 
+| Option | Example | Comment |
+|--------|---------|---------|
+| table | `table=foo` | |
+| prefix | `prefix=x` | |
+
 ## SQL
 
 The table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contain the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contain the field count for a given record.

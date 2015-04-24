@@ -54,7 +54,7 @@ namespace eval ::sqawk::tests {
         return $result
     } -result {}
 
-    tcltest::test test3 {JOIN on files from examples/three-files/, FS setting} \
+    tcltest::test test4 {JOIN on files from examples/three-files/, FS setting} \
             -constraints unix \
             -setup $setup \
             -body {
@@ -69,6 +69,59 @@ namespace eval ::sqawk::tests {
         file delete $filename
         return $result
     } -result {}
+
+    tcltest::test test5 {Custom table names} \
+            -setup $setup \
+            -body {
+        set ch [file tempfile filename1]
+        puts $ch "foo 1\nfoo 2\nfoo 3"
+        close $ch
+        set ch [file tempfile filename2]
+        puts $ch "bar 4\nbar 5\nbar 6"
+        close $ch
+        set result [exec tclsh sqawk.tcl {
+            select foo2 from foo; select b2 from b
+        } table=foo $filename1 $filename2]
+        file delete $filename1
+        file delete $filename2
+        return $result
+    } -result "1\n2\n3\n4\n5\n6"
+
+    tcltest::test test6 {Custom table name} \
+            -setup $setup \
+            -body {
+        set ch [file tempfile filename1]
+        puts $ch "foo 1\nfoo 2\nfoo 3"
+        close $ch
+        set ch [file tempfile filename2]
+        puts $ch "bar 4\nbar 5\nbar 6"
+        close $ch
+
+        set result [exec tclsh sqawk.tcl {
+            select foo2 from foo; select b2 from b
+        } table=foo $filename1 $filename2]
+        file delete $filename1
+        file delete $filename2
+        return $result
+    } -result "1\n2\n3\n4\n5\n6"
+
+    tcltest::test test7 {Custom table names and prefixes} \
+            -setup $setup \
+            -body {
+        set ch [file tempfile filename1]
+        puts $ch "foo 1\nfoo 2\nfoo 3"
+        close $ch
+        set ch [file tempfile filename2]
+        puts $ch "bar 4\nbar 5\nbar 6"
+        close $ch
+
+        set result [exec tclsh sqawk.tcl {
+            select foo.x2 from foo; select baz2 from bar
+        } table=foo prefix=x $filename1 table=bar prefix=baz $filename2]
+        file delete $filename1
+        file delete $filename2
+        return $result
+    } -result "1\n2\n3\n4\n5\n6"
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {
