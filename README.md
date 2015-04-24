@@ -12,6 +12,28 @@ or
 
 `sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
+## An example
+
+Here is a somewhat contrived example that shows a script, a global option and file options in use:
+
+```sh
+# List all login shells are used on the system.
+sqawk -ORS '\n' 'select distinct col7 from passwords order by col7' FS=: prefix=col table=passwords /etc/passwd
+```
+
+In practice you would rather write
+
+```sh
+# Do the same thing.
+sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
+```
+
+## SQL
+
+A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 dialect of SQL.
+
+The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any file with a file option. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
+
 ## Options
 
 ### Global options
@@ -41,11 +63,7 @@ These options are set before a filename and only affect one file.
 | RS | `RS=\n` | Same as -RS but for one file. |
 | NF | `NF=20` | Same as -NF but for one file. |
 
-## SQL
-
-Unless specified otherwise the table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contain the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contain the field count for a given record.
-
-# Examples
+# More examples
 
 ## Sum up numbers
 
@@ -126,7 +144,7 @@ This example uses the files from the [happypenguin.com 2013 data dump](https://a
     # Perform query
     sqawk 'select a1, b1, a2 from a inner join b on a2 = b2 where b1 < 10000 order by b1' MD5SUMS du-bytes
 
-You don't have to download the data yourself to recreate `MD5SUMS` and `du-bytes`; the files can be found in the directory [`examples/`](./examples/).
+You don't need to download the data yourself to recreate `MD5SUMS` and `du-bytes`; the files can be found in  the directory [`examples/`](./examples/).
 
 ### Input files
 
