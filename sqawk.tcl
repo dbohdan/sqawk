@@ -16,18 +16,21 @@ namespace eval ::sqawk::script {
     variable debug 0
 }
 
-::snit::type ::sqawk::sqawk {
-    option -database
-    option -fsx
-    option -rsx
-    option -ofs { }
-    option -ors {\n}
-    option -maxnf 10
+::snit::type ::sqawk::table {
+    variable database
 
-    method create-table {table keyPrefix} {
+    option -database
+    option -dbtable
+    option -keyprefix
+    option -fs
+    option -rs
+    option -maxnf
+
+    method initialize {} {
         set fields {}
+        set keyPrefix [$self cget -keyprefix]
         set command {
-            CREATE TABLE ${table} (
+            CREATE TABLE [$self cget -dbtable] (
                 ${keyPrefix}nr INTEGER PRIMARY KEY,
                 ${keyPrefix}nf INTEGER,
                 [join $fields ","]
@@ -40,14 +43,15 @@ namespace eval ::sqawk::script {
         [$self cget -database] eval [subst $command]
     }
 
-    method insert-data-from-channel {channel table keyPrefix FS RS} {
+    method insert-data-from-channel {channel FS RS} {
+        set keyPrefix [$self cget -keyprefix]
         set records [::textutil::splitx [read $channel] $RS]
         if {[lindex $records end] eq ""} {
             set records [lrange $records 0 end-1]
         }
 
         set insertCommand {
-            INSERT INTO ${table} ([join $insertColumnNames ","])
+            INSERT INTO [$self cget -dbtable] ([join $insertColumnNames ","])
             VALUES ([join $insertValues ,])
         }
         foreach record $records {
@@ -64,6 +68,32 @@ namespace eval ::sqawk::script {
             }
             [$self cget -database] eval [subst $insertCommand]
         }
+    }
+}
+
+::snit::type ::sqawk::sqawk {
+    variable tables
+
+    option -database
+    option -fsx
+    option -rsx
+    option -ofs { }
+    option -ors {\n}
+    option -maxnf 10
+
+    method create-table tableName {
+        set newTable [::sqawk::table create %AUTO%]
+        $newTable configure -dbtable $tableName
+        $newTable configure -keyprefix $tableName
+        foreach key [list -database -maxnf] {
+            $newTable configure $key [$self cget $key]
+        }
+        $newTable initialize
+        dict set tables $tableName $newTable
+    }
+
+    method insert-data-from-channel {channel tableName FS RS} {
+        [dict get $tables $tableName] insert-data-from-channel $channel $FS $RS
     }
 
     method output {data} {
@@ -253,10 +283,8 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
             exit 1
         }
         set tableName [lindex $tableNames [expr {$i - 1}]]
-        $obj create-table $tableName \
-                $tableName
-        $obj insert-data-from-channel $fileHandle $tableName \
-                $tableName $FS $RS
+        $obj create-table $tableName
+        $obj insert-data-from-channel $fileHandle $tableName $FS $RS
         incr i
     }
     $obj perform-query $script
