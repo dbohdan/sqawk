@@ -16,7 +16,7 @@ or
 
 ### Global options
 
-The following options affect all files.
+These options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
@@ -30,13 +30,13 @@ The following options affect all files.
 
 ### Per-file options
 
-These options are specified before a filename and only affect one file.
+These options are set before a filename and only affect one file.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| header | `header=1` | Use the first row of the file as the source of column names. If the first row has five fields than the first five columns will have custom names with all the following column use automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
+| header | `header=1` | Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
-| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, etc. Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, etc.  |
+| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, ...  |
 | FS | `FS=,` | Same as -FS but for one file. |
 | RS | `RS=\n` | Same as -RS but for one file. |
 | NF | `NF=20` | Same as -NF but for one file. |

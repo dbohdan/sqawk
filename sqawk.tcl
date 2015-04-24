@@ -32,6 +32,8 @@ namespace eval ::sqawk::script {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
     }
 
+    # Returns column name for column number $i, custom (if present) or
+    # automatically generate.
     method column-name i {
         set customColName [lindex [$self cget -header] $i-1]
         if {($i > 0) && ($customColName ne "")} {
