@@ -63,7 +63,7 @@ namespace eval ::sqawk::tests {
         exec tclsh sqawk.tcl -FS , {
             select a1, a2, b2, c2 from a inner join b on a1 = b1
             inner join c on a1 = c1
-        } $dir/1 FS=, $dir/2 FS=_ FS=, $dir/3 > $filename
+        } $dir/1 FS=_ FS=, $dir/2 $dir/3 > $filename
         unset dir
         set result [exec diff examples/three-files/results.correct $filename]
         file delete $filename

@@ -13,70 +13,111 @@ namespace eval ::sqawk {
 }
 namespace eval ::sqawk::script {
     variable debug 0
+    variable profile 0
+    if {$profile} {
+        package require profiler
+        ::profiler::init
+    }
 }
 
+# Creates and populates an SQLite3 table with a specific format.
 ::snit::type ::sqawk::table {
     option -database
     option -dbtable
-    option -keyprefix
+    option -columnprefix
     option -maxnf
+    option -header {}
 
     destructor {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
     }
 
-    # Create DB tables.
+    method column-name i {
+        set customColName [lindex [$self cget -header] $i-1]
+        if {($i > 0) && ($customColName ne "")} {
+            set colName $customColName
+        } else {
+            set colName [$self cget -columnprefix]$i
+        }
+    }
+
+    # Create a database table for the table object.
     method initialize {} {
         set fields {}
-        set keyPrefix [$self cget -keyprefix]
+        set colPrefix [$self cget -columnprefix]
         set command {
             CREATE TABLE [$self cget -dbtable] (
-                ${keyPrefix}nr INTEGER PRIMARY KEY,
-                ${keyPrefix}nf INTEGER,
+                ${colPrefix}nr INTEGER PRIMARY KEY,
+                ${colPrefix}nf INTEGER,
                 [join $fields ","]
             )
         }
         set maxNF [$self cget -maxnf]
         for {set i 0} {$i <= $maxNF} {incr i} {
-            lappend fields "$keyPrefix$i INTEGER"
+            lappend fields "[$self column-name $i] INTEGER"
         }
         [$self cget -database] eval [subst $command]
     }
 
-    # Read data from $channel.
-    method insert-data-from-channel {channel FS RS} {
-        set keyPrefix [$self cget -keyprefix]
-        set records [::textutil::splitx [read $channel] $RS]
-        if {[lindex $records end] eq ""} {
-            set records [lrange $records 0 end-1]
+    # Insert each row from the list $rows into the table in a transaction.
+    method insert-rows rows {
+        set db [$self cget -database]
+        set colPrefix [$self cget -columnprefix]
+        set tableName [$self cget -dbtable]
+
+        set commands {}
+
+        set rowInsertCommand {
+            INSERT INTO $tableName ($insertColumnNames)
+            VALUES ($insertValues);
         }
 
-        set insertCommand {
-            INSERT INTO [$self cget -dbtable] ([join $insertColumnNames ","])
-            VALUES ([join $insertValues ,])
+        set maxNF [$self cget -maxnf]
+        for {set i 0} {$i <= $maxNF} {incr i} {
+            set columnNames($i) [$self column-name $i]
         }
-        foreach record $records {
-            set fields [::textutil::splitx $record $FS]
-            set insertColumnNames "${keyPrefix}nf,${keyPrefix}0"
-            set insertValues  {$nf,$record}
-            set nf [llength $fields]
-            set i 1
-            foreach field $fields {
-                set $keyPrefix$i $field
-                lappend insertColumnNames "$keyPrefix$i"
-                lappend insertValues "\$$keyPrefix$i"
-                incr i
+
+        $db transaction {
+            foreach row $rows {
+                set insertColumnNames "${colPrefix}nf,${colPrefix}0,"
+                set insertValues {$nf,$row,}
+                set i 1
+                set nf [llength $row]
+                foreach field $row {
+                    set lastRow [expr { $i == $nf }]
+                    set $columnNames($i) $field
+                    append insertColumnNames $columnNames($i)
+                    if {!$lastRow} {
+                        append insertColumnNames ,
+                    }
+                    append insertValues "\$$columnNames($i)"
+                    if {!$lastRow} {
+                        append insertValues ,
+                    }
+                    incr i
+                }
+                $db eval [subst $rowInsertCommand]
             }
-            [$self cget -database] eval [subst $insertCommand]
         }
     }
 }
 
+# If key $key is absent in the dictionary variable $dictVarName set it to
+# $value.
 proc ::sqawk::dict-ensure-default {dictVarName key value} {
     upvar 1 $dictVarName dictionary
     set dictionary [dict merge [list $key $value] $dictionary]
 }
 
+# Remove and return $n elements from the list stored in the variable $varName.
+proc ::sqawk::lshift! {varName {n 1}} {
+    upvar 1 $varName list
+    set result [lrange $list 0 $n-1]
+    set list [lrange $list $n end]
+    return $result
+}
+
+# Performs SQL queries on files and channels.
 ::snit::type ::sqawk::sqawk {
     variable tables {}
     variable defaultTableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
@@ -86,37 +127,58 @@ proc ::sqawk::dict-ensure-default {dictVarName key value} {
     option -ors
 
     destructor {
-        dict for {_ tableObj} q$tables {
+        dict for {_ tableObj} $tables {
             $tableObj destroy
         }
     }
 
-    # Read data from the file specified in the dictionary $fileData into a new
-    # database table.
-    method read-file fileData {
-        # Default table name ("a", "b", "c", ..., "z").
+    # Read data from the file specified in the dictionary $fileOptions into a
+    # new database table.
+    method read-file fileOptions {
+        # Set the default table name ("a", "b", "c", ..., "z").
         set defaultTableName [lindex $defaultTableNames [dict size $tables]]
-        ::sqawk::dict-ensure-default fileData table $defaultTableName
-        # Default keyprefix (equal to table name).
-        ::sqawk::dict-ensure-default fileData prefix [dict get $fileData table]
+        ::sqawk::dict-ensure-default fileOptions table $defaultTableName
+        # Set the default column name prefix equal to the table name.
+        ::sqawk::dict-ensure-default fileOptions prefix \
+                [dict get $fileOptions table]
+        ::sqawk::dict-ensure-default fileOptions header 0
 
-        array set data $fileData
+        array set metadata $fileOptions
 
-        # Make a new table.
-        set newTable [::sqawk::table create %AUTO%]
-        $newTable configure -database [$self cget -database]
-        $newTable configure -dbtable $data(table)
-        $newTable configure -keyprefix $data(prefix)
-        $newTable configure -maxnf $data(NF)
-        $newTable initialize
-        if {$data(filename) eq "-"} {
+        # Read the data. Split it first into records then into fields.
+        if {[info exists metadata(channel)]} {
+            set ch $metadata(channel)
+        } elseif {$metadata(filename) eq "-"} {
             set ch stdin
         } else {
-            set ch [open $data(filename)]
+            set ch [open $metadata(filename)]
         }
-        $newTable insert-data-from-channel $ch $data(FS) $data(RS)
+        set records [::textutil::splitx [read $ch] $metadata(RS)]
         close $ch
-        dict set tables $data(table) $newTable
+
+        if {[lindex $records end] eq ""} {
+            set records [lrange $records 0 end-1]
+        }
+        set rows {}
+        foreach record $records {
+            lappend rows [::textutil::splitx $record $metadata(FS)]
+        }
+
+        # Create and configure a new table object.
+        set newTable [::sqawk::table create %AUTO%]
+        $newTable configure -database [$self cget -database]
+        $newTable configure -dbtable $metadata(table)
+        $newTable configure -columnprefix $metadata(prefix)
+        $newTable configure -maxnf $metadata(NF)
+        if {$metadata(header)} {
+            $newTable configure -header [lindex [::sqawk::lshift! rows] 0]
+        }
+        $newTable initialize
+
+        # Insert rows in the table.
+        $newTable insert-rows $rows
+
+        dict set tables $metadata(table) $newTable
         return $newTable
     }
 
@@ -124,26 +186,19 @@ proc ::sqawk::dict-ensure-default {dictVarName key value} {
     method perform-query {query {channel stdout}} {
         # For each row returned...
         [$self cget -database] eval $query results {
-            set output {}
+            set outputRecord {}
             set keys $results(*)
             foreach key $keys {
-                lappend output $results($key)
+                lappend outputRecord $results($key)
             }
-            set outputRecord [join $output [$self cget -ofs]][$self cget -ors]
-            puts -nonewline $channel $outputRecord
+            set output [join $outputRecord [$self cget -ofs]][$self cget -ors]
+            puts -nonewline $channel $output
         }
     }
 }
 
-# Remove and return $n elements from the list stored in the variable $varName.
-proc ::sqawk::script::lshift! {varName {n 1}} {
-    upvar 1 $varName list
-    set result [lrange $list 0 $n-1]
-    set list [lrange $list $n end]
-    return $result
-}
-
-# Return a subdictionary of $dictionary with only the keys in $keyList.
+# Return a subdictionary of $dictionary with only the keys in $keyList and the
+# corresponding values.
 proc ::sqawk::script::filter-keys {dictionary keyList {mustExist 1}} {
     set result {}
     foreach key $keyList {
@@ -155,14 +210,14 @@ proc ::sqawk::script::filter-keys {dictionary keyList {mustExist 1}} {
     return $result
 }
 
-# Process $argv into per-file options.
+# Process $argv into a list of per-file options.
 proc ::sqawk::script::process-options {argv} {
     set options {
         {FS.arg {[ \t]+} "Input field separator for all files (regexp)"}
         {RS.arg {\n} "Input record separator for all files (regexp)"}
         {OFS.arg { } "Output field separator"}
         {ORS.arg {\n} "Output record separator"}
-        {NF.arg 10 "Maximum NF value"}
+        {NF.arg 10 "Maximum NF value for all files"}
         {v "Print version"}
         {1 "One field only. A shortcut for -FS '^$'"}
     }
@@ -176,7 +231,7 @@ proc ::sqawk::script::process-options {argv} {
         exit 0
     }
 
-    lassign [lshift! argv] script
+    lassign [::sqawk::lshift! argv] script
     if {$script eq ""} {
         error "empty script"
     }
@@ -192,19 +247,18 @@ proc ::sqawk::script::process-options {argv} {
                 [dict get $cmdOptions $option]]
     }
 
-    # Global settings.
+    # Settings that affect the Sqawk object itself.
     set globalOptions [::sqawk::script::filter-keys $cmdOptions { OFS ORS }]
 
-    # File settings.
+    # Filenames and individual file settings.
     set fileCount 0
-    set usedStdin 0
-    set fileSettings {}
-    set defaultFileSettings [::sqawk::script::filter-keys $cmdOptions {
+    set fileOptions {}
+    set defaultFileOptions [::sqawk::script::filter-keys $cmdOptions {
         FS RS NF
     }]
-    set currentFileSettings $defaultFileSettings
+    set currentFileSettings $defaultFileOptions
     while {[llength $argv] > 0} {
-        lassign [lshift! argv] elem
+        lassign [::sqawk::lshift! argv] elem
         # setting=value
         if {[regexp {([^=]+)=(.*)} $elem _ key value]} {
             dict set currentFileSettings $key $value
@@ -212,8 +266,8 @@ proc ::sqawk::script::process-options {argv} {
             # Filename.
             if {[file exists $elem] || ($elem eq "-")} {
                 dict set currentFileSettings filename $elem
-                lappend fileSettings $currentFileSettings
-                set currentFileSettings $defaultFileSettings
+                lappend fileOptions $currentFileSettings
+                set currentFileSettings $defaultFileOptions
                 incr fileCount
             } else {
                 error "can't find file \"$elem\""
@@ -221,15 +275,16 @@ proc ::sqawk::script::process-options {argv} {
         }
     }
     # If no files are given add "-" (standard input) with the current settings
-    # to fileSettings.
+    # to fileOptions.
     if {$fileCount == 0} {
         dict set currentFileSettings filename -
-        lappend fileSettings $currentFileSettings
+        lappend fileOptions $currentFileSettings
     }
 
-    return [list $script $globalOptions $fileSettings]
+    return [list $script $globalOptions $fileOptions]
 }
 
+# Create an SQLite3 database for ::sqawk::sqawk to use.
 proc ::sqawk::script::create-database {database} {
     variable debug
 
@@ -242,22 +297,24 @@ proc ::sqawk::script::create-database {database} {
 }
 
 proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
+    # Try to process the command line options.
     set error [catch {
         lassign [::sqawk::script::process-options $argv] \
-                script options fileSettings
+                script options fileOptions
     } errorMessage]
     if {$error} {
         puts "error: $errorMessage"
         exit 1
     }
 
+    # Initialize Sqawk and the corresponding database.
     ::sqawk::script::create-database $databaseHandle
     set obj [::sqawk::sqawk create %AUTO%]
     $obj configure -database $databaseHandle
     $obj configure -ofs [dict get $options OFS]
     $obj configure -ors [dict get $options ORS]
 
-    foreach file $fileSettings {
+    foreach file $fileOptions {
         $obj read-file $file
     }
 
@@ -275,4 +332,9 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
 # If this is the main script...
 if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0])} {
     ::sqawk::script::main $argv0 $argv
+    if {$::sqawk::script::profile} {
+        foreach line [::profiler::sortFunctions exclusiveRuntime] {
+            puts stderr $line
+        }
+    }
 }

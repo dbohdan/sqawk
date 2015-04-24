@@ -6,13 +6,17 @@
 
 # Usage
 
-`sqawk [options] script [setting=value ...] < filename`
+`sqawk [globaloptions] script [option=value ...] < filename`
 
 or
 
-`sqawk [options] script [setting=value ...] filename1 [[setting=value ...] filename2 ...]`
+`sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
 ## Options
+
+### Global options
+
+The following options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
@@ -20,18 +24,26 @@ or
 | -RS value | `-RS '\n'` | Input record separator (one for all input files). |
 | -OFS value | `-OFS ' '` | Output field separator. |
 | -ORS value | `-ORS '\n'` | Output record separator. |
-| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get the error `table x has no column named x51`. |
+| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51`. |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 
+### Per-file options
+
+These options are specified before a filename and only affect one file.
+
 | Option | Example | Comment |
 |--------|---------|---------|
-| table | `table=foo` | |
-| prefix | `prefix=x` | |
+| header | `header=1` | Use the first row of the file as the source of column names. If the first row has five fields than the first five columns will have custom names with all the following column use automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
+| prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
+| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, etc. Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, etc.  |
+| FS | `FS=,` | Same as -FS but for one file. |
+| RS | `RS=\n` | Same as -RS but for one file. |
+| NF | `NF=20` | Same as -NF but for one file. |
 
 ## SQL
 
-The table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contain the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contain the field count for a given record.
+Unless specified otherwise the table names are `a` for the first input file, `b` for the second, `c` for the third, etc. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contain the record number and is the primary key of its respective  table. `anf`, `bnf` and so on contain the field count for a given record.
 
 # Examples
 
