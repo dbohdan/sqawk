@@ -17,13 +17,9 @@ namespace eval ::sqawk::script {
 }
 
 ::snit::type ::sqawk::table {
-    variable database
-
     option -database
     option -dbtable
     option -keyprefix
-    option -fs
-    option -rs
     option -maxnf
 
     method initialize {} {
@@ -75,8 +71,6 @@ namespace eval ::sqawk::script {
     variable tables
 
     option -database
-    option -fsx
-    option -rsx
     option -ofs { }
     option -ors {\n}
     option -maxnf 10
@@ -90,6 +84,7 @@ namespace eval ::sqawk::script {
         }
         $newTable initialize
         dict set tables $tableName $newTable
+        return $newTable
     }
 
     method insert-data-from-channel {channel tableName FS RS} {
@@ -221,22 +216,7 @@ proc ::sqawk::script::process-options {argv} {
                 [dict get $cmdOptions $option]]
     }
 
-    # Map command line option names to sqawker object option names.
-    set objOptions {}
-    set keyMap {
-        FSx -fsx
-        RSx -rsx
-        OFS -ofs
-        ORS -ors
-        NF -maxnf
-    }
-    foreach {keyFrom keyTo} $keyMap {
-        if {[dict exists $cmdOptions $keyFrom]} {
-            dict set objOptions $keyTo [dict get $cmdOptions $keyFrom]
-        }
-    }
-
-    return [list $objOptions $script $filenames]
+    return [list $cmdOptions $script $filenames]
 }
 
 proc ::sqawk::script::create-database {database} {
@@ -263,20 +243,22 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     if {$filenames eq ""} {
         set fileHandles stdin
     } else {
-        set fileHandles [::struct::list mapfor x $filenames {open $x r}]
+        set fileHandles [::struct::list mapfor x $filenames { open $x r }]
     }
 
     ::sqawk::script::create-database $databaseHandle
     set obj [::sqawk::sqawk create %AUTO%]
     $obj configure -database $databaseHandle
-    $obj configure {*}$options
+    $obj configure -ofs [dict get $options OFS]
+    $obj configure -ors [dict get $options ORS]
+    $obj configure -maxnf [dict get $options NF]
 
     set tableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
     set tableNamesLength [llength $tableNames]
     set i 1
     foreach fileHandle $fileHandles \
-            FS [dict get $options -fsx] \
-            RS [dict get $options -rsx] {
+            FS [dict get $options FSx] \
+            RS [dict get $options RSx] {
         if {$i > $tableNamesLength} {
             puts "too many files given ($i);\
                     can import up to $tableNamesLength"
