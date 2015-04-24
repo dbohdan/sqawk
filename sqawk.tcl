@@ -4,47 +4,49 @@
 # License: MIT
 package require Tcl 8.5
 package require cmdline
+package require snit 2
+package require sqlite3
 package require struct
 package require textutil
-package require sqlite3
 
-namespace eval sqawk {
-    variable version 0.3.5
+namespace eval ::sqawk {
+    variable version 0.4.0
+}
+namespace eval ::sqawk::script {
     variable debug 0
+}
 
-    proc create-database {database} {
-        variable debug
+::snit::type ::sqawk::sqawk {
+    option -database
+    option -fsx
+    option -rsx
+    option -ofs { }
+    option -ors {\n}
+    option -maxnf 10
 
-        if {$debug} {
-            file delete /tmp/sqawk.db
-            ::sqlite3 $database /tmp/sqawk.db
-        } else {
-            ::sqlite3 $database :memory:
-        }
-    }
-
-    proc create-table {database table keyPrefix maxNF} {
+    method create-table {table keyPrefix} {
         set fields {}
-        set query {
+        set command {
             CREATE TABLE ${table} (
                 ${keyPrefix}nr INTEGER PRIMARY KEY,
                 ${keyPrefix}nf INTEGER,
                 [join $fields ","]
             )
         }
+        set maxNF [$self cget -maxnf]
         for {set i 0} {$i <= $maxNF} {incr i} {
             lappend fields "$keyPrefix$i INTEGER"
         }
-        $database eval [subst $query]
+        [$self cget -database] eval [subst $command]
     }
 
-    proc insert-data-from-file {fileHandle database table keyPrefix FS RS} {
-        set records [::textutil::splitx [read $fileHandle] $RS]
+    method insert-data-from-channel {channel table keyPrefix FS RS} {
+        set records [::textutil::splitx [read $channel] $RS]
         if {[lindex $records end] eq ""} {
             set records [lrange $records 0 end-1]
         }
 
-        set insertQuery {
+        set insertCommand {
             INSERT INTO ${table} ([join $insertColumnNames ","])
             VALUES ([join $insertValues ,])
         }
@@ -60,11 +62,11 @@ namespace eval sqawk {
                 lappend insertValues "\$$keyPrefix$i"
                 incr i
             }
-            $database eval [subst $insertQuery]
+            [$self cget -database] eval [subst $insertCommand]
         }
     }
 
-    proc output {data} {
+    method output {data} {
         # Do not throw an error if stdout is closed during output (e.g., if
         # someone is piping the output to head(1)).
         catch {
@@ -72,158 +74,196 @@ namespace eval sqawk {
         }
     }
 
-    proc perform-query {database query OFS ORS} {
-        $database eval $query results {
+    # Perform query $query and print the result.
+    method perform-query {query} {
+        [$self cget -database] eval $query results {
             set output {}
             set keys $results(*)
             foreach key $keys {
                 lappend output $results($key)
             }
-            output [join $output $OFS]$ORS
+            $self output [join $output [$self cget -ofs]][$self cget -ors]
         }
-    }
-
-    proc check-separator-list {sepList fileCount} {
-        if {$fileCount != [llength $sepList]} {
-            error "given [llength $sepList] separators for $fileCount files"
-        }
-    }
-
-    proc adjust-separators {key sep agrKey sepList default fileCount} {
-        set keyPresent [expr {$sep ne ""}]
-        set agrKeyPresent [expr {
-            [llength $sepList] > 0
-        }]
-
-        if {$keyPresent && $agrKeyPresent} {
-            error "cannot specify -$key and -$agrKey at the same time"
-        }
-
-        # Set key to its default value.
-        if {!$keyPresent && !$agrKeyPresent} {
-            set sep $default
-            set keyPresent 1
-        }
-
-        # Set $agrKey to the value under $key.
-        if {$keyPresent && !$agrKeyPresent} {
-            set sepList [::struct::list repeat $fileCount $sep]
-            set agrKeyPresent 1
-        }
-
-        # By now sepList has been set.
-
-        check-separator-list $sepList $fileCount
-        return [list $sep $sepList]
-    }
-
-    proc process-options {argv} {
-        variable version
-
-        set defaultValues {
-            FS {[ \t]+}
-            RS {\n}
-        }
-
-        set options [string map \
-                [list %defaultFS %defaultFS %defaultRS %defaultRS] {
-            {FS.arg {} "Input field separator (regexp)"}
-            {RS.arg {} "Input record separator (regexp)"}
-            {FSx.arg {}
-                    "Per-file input field separator list (regexp)"}
-            {RSx.arg {}
-                    "Per-file input record separator list (regexp)"}
-            {OFS.arg { } "Output field separator"}
-            {ORS.arg {\n} "Output record separator"}
-            {NF.arg 10 "Maximum NF value"}
-            {v "Print version"}
-            {1 "One field only. A shortcut for -FS '^$'"}
-        }]
-        set usage "?options? script ?filename ...?"
-        set cmdOptions [::cmdline::getoptions argv $options $usage]
-        set script [lindex $argv 0]
-        if {$script eq ""} {
-            error "empty script"
-        }
-        set filenames [lrange $argv 1 end]
-        set fileCount [llength $filenames]
-        if {$fileCount == 0} {
-            set fileCount 1
-        }
-
-        if {[dict get $cmdOptions v]} {
-            puts $version
-            exit 0
-        }
-        if {[dict get $cmdOptions 1]} {
-            dict set cmdOptions FS '^$'
-        }
-
-
-        # The logic for FS and RS default values and FS and RS determining FSx
-        # and RSx if the latter two are not set.
-        foreach key {FS RS} {
-            set agrKey "${key}x"
-            lassign [adjust-separators $key \
-                            [dict get $cmdOptions $key] \
-                            $agrKey \
-                            [dict get $cmdOptions $agrKey] \
-                            [dict get $defaultValues $key] \
-                            $fileCount] \
-                    value \
-                    agrValue
-            dict set cmdOptions $key $value
-            dict set cmdOptions $agrKey $agrValue
-        }
-
-        # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will
-        # do this for us.)
-        foreach option {OFS ORS} {
-            dict set cmdOptions $option [subst -nocommands -novariables \
-                    [dict get $cmdOptions $option]]
-        }
-
-        return [list $cmdOptions $script $filenames]
-    }
-
-    proc main {argv {databaseHandle db}} {
-        set error [catch {
-            lassign [process-options $argv] settings script filenames
-        } errorMessage]
-        if {$error} {
-            puts "error: $errorMessage"
-            exit 1
-        }
-
-        if {$filenames eq ""} {
-            set fileHandles stdin
-        } else {
-            set fileHandles [::struct::list mapfor x $filenames {open $x r}]
-        }
-
-        create-database $databaseHandle
-
-        set tableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
-        set i 1
-        foreach fileHandle $fileHandles \
-                FS [dict get $settings FSx] \
-                RS [dict get $settings RSx] {
-            set tableName [lindex $tableNames [expr {$i - 1}]]
-            create-table $databaseHandle \
-                    $tableName \
-                    $tableName \
-                    [dict get $settings NF]
-            $databaseHandle transaction {
-                insert-data-from-file $fileHandle $databaseHandle $tableName \
-                        $tableName $FS $RS
-            }
-            incr i
-        }
-        perform-query $databaseHandle \
-                $script \
-                [dict get $settings OFS] \
-                [dict get $settings ORS]
     }
 }
 
-::sqawk::main $argv
+proc ::sqawk::script::check-separator-list {sepList fileCount} {
+    if {$fileCount != [llength $sepList]} {
+        error "given [llength $sepList] separators for $fileCount files"
+    }
+}
+
+proc ::sqawk::script::adjust-separators {key sep agrKey sepList default
+        fileCount} {
+    set keyPresent [expr {$sep ne ""}]
+    set agrKeyPresent [expr {
+        [llength $sepList] > 0
+    }]
+
+    if {$keyPresent && $agrKeyPresent} {
+        error "cannot specify -$key and -$agrKey at the same time"
+    }
+
+    # Set key to its default value.
+    if {!$keyPresent && !$agrKeyPresent} {
+        set sep $default
+        set keyPresent 1
+    }
+
+    # Set $agrKey to the value under $key.
+    if {$keyPresent && !$agrKeyPresent} {
+        set sepList [::struct::list repeat $fileCount $sep]
+        set agrKeyPresent 1
+    }
+
+    # By now sepList has been set.
+
+    ::sqawk::script::check-separator-list $sepList $fileCount
+    return [list $sep $sepList]
+}
+
+# Process $argv into sqawker object options.
+proc ::sqawk::script::process-options {argv} {
+    variable version
+
+    set defaultValues {
+        FS {[ \t]+}
+        RS {\n}
+    }
+
+    set options {
+        {FS.arg {} "Input field separator (regexp)"}
+        {RS.arg {} "Input record separator (regexp)"}
+        {FSx.arg {}
+                "Per-file input field separator list (regexp)"}
+        {RSx.arg {}
+                "Per-file input record separator list (regexp)"}
+        {OFS.arg { } "Output field separator"}
+        {ORS.arg {\n} "Output record separator"}
+        {NF.arg 10 "Maximum NF value"}
+        {v "Print version"}
+        {1 "One field only. A shortcut for -FS '^$'"}
+    }
+
+    set usage "?options? script ?filename ...?"
+    set cmdOptions [::cmdline::getoptions argv $options $usage]
+
+    if {[dict get $cmdOptions v]} {
+        puts $version
+        exit 0
+    }
+
+    set script [lindex $argv 0]
+    if {$script eq ""} {
+        error "empty script"
+    }
+    set filenames [lrange $argv 1 end]
+    set fileCount [llength $filenames]
+    if {$fileCount == 0} {
+        set fileCount 1
+    }
+
+    if {[dict get $cmdOptions 1]} {
+        dict set cmdOptions FS ^$
+    }
+
+
+    # The logic for FS and RS default values and FS and RS determining FSx
+    # and RSx if the latter two are not set.
+    foreach key {FS RS} {
+        set agrKey "${key}x"
+        lassign [::sqawk::script::adjust-separators $key \
+                        [dict get $cmdOptions $key] \
+                        $agrKey \
+                        [dict get $cmdOptions $agrKey] \
+                        [dict get $defaultValues $key] \
+                        $fileCount] \
+                value \
+                agrValue
+        dict set cmdOptions $key $value
+        dict set cmdOptions $agrKey $agrValue
+    }
+
+    # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will
+    # do this for us.)
+    foreach option {OFS ORS} {
+        dict set cmdOptions $option [subst -nocommands -novariables \
+                [dict get $cmdOptions $option]]
+    }
+
+    # Map command line option names to sqawker object option names.
+    set objOptions {}
+    set keyMap {
+        FSx -fsx
+        RSx -rsx
+        OFS -ofs
+        ORS -ors
+        NF -maxnf
+    }
+    foreach {keyFrom keyTo} $keyMap {
+        if {[dict exists $cmdOptions $keyFrom]} {
+            dict set objOptions $keyTo [dict get $cmdOptions $keyFrom]
+        }
+    }
+
+    return [list $objOptions $script $filenames]
+}
+
+proc ::sqawk::script::create-database {database} {
+    variable debug
+
+    if {$debug} {
+        file delete /tmp/sqawk.db
+        ::sqlite3 $database /tmp/sqawk.db
+    } else {
+        ::sqlite3 $database :memory:
+    }
+}
+
+proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
+    set error [catch {
+        lassign [::sqawk::script::process-options $argv] \
+                options script filenames
+    } errorMessage]
+    if {$error} {
+        puts "error: $errorMessage"
+        exit 1
+    }
+
+    if {$filenames eq ""} {
+        set fileHandles stdin
+    } else {
+        set fileHandles [::struct::list mapfor x $filenames {open $x r}]
+    }
+
+    ::sqawk::script::create-database $databaseHandle
+    set obj [::sqawk::sqawk create %AUTO%]
+    $obj configure -database $databaseHandle
+    $obj configure {*}$options
+
+    set tableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
+    set tableNamesLength [llength $tableNames]
+    set i 1
+    foreach fileHandle $fileHandles \
+            FS [dict get $options -fsx] \
+            RS [dict get $options -rsx] {
+        if {$i > $tableNamesLength} {
+            puts "too many files given ($i);\
+                    can import up to $tableNamesLength"
+            exit 1
+        }
+        set tableName [lindex $tableNames [expr {$i - 1}]]
+        $obj create-table $tableName \
+                $tableName
+        $obj insert-data-from-channel $fileHandle $tableName \
+                $tableName $FS $RS
+        incr i
+    }
+    $obj perform-query $script
+    $obj destroy
+}
+
+# If this is the main script...
+if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0])} {
+    ::sqawk::script::main $argv0 $argv
+}
