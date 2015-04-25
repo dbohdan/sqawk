@@ -28,6 +28,8 @@ In practice you would rather write
 sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
 ```
 
+[Skip down](#format-options) for more examples.
+
 ## SQL
 
 A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 dialect of SQL.
@@ -65,12 +67,12 @@ These options are set before a filename and only affect one file.
 
 ### Format options
 
-A format option (`format=X`) sets the input parser with which Sqawk will parse the next input file. Formats have have multiple synonymous names or multiple names that produces slightly different effects.
+A format option (`format=x`) sets the input parser with which Sqawk will parse the next input file. Formats can have multiple synonymous names or multiple names that produce slightly different effects. Selecting an input format can enable additional per-file options that only work with that format.
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
-| `awk` or `raw` | `FS`, `RS` | `RS=\n`, `FS=:` | The default input parser. Splits input into records then fields using regular expressions. `FS` and `RS` are the same as -FS and -RS respectively but only apply to one file. |
-| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input file as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) useful for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator. |
+| `awk` or `raw` | `FS`, `RS` | `RS=\n`, `FS=:` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. |
+| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
 
 # More examples
 

@@ -30,4 +30,3 @@ test: sqawk
 .POSIX:
 
 .PHONY: install installdirs sqawk test .POSIX
-
