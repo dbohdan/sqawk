@@ -40,7 +40,7 @@ namespace eval ::sqawk::tests {
         }
     }
 
-    tcltest::test test1 {Handle broken pipe} \
+    tcltest::test test1 {Handle broken pipe, read from stdin} \
             -constraints unix \
             -setup $setup \
             -body {
@@ -48,7 +48,7 @@ namespace eval ::sqawk::tests {
             puts $ch "line 1\nline 2\nline 3"
             close $ch
             set result [exec \
-                    tclsh sqawk.tcl {select a0 from a} $filename | head -n 1]
+                    tclsh sqawk.tcl {select a0 from a} < $filename | head -n 1]
         }
         return $result
     } -result {line 1}
@@ -150,6 +150,52 @@ namespace eval ::sqawk::tests {
         }
         return $result
     } -result "Smith 10\nMcDonald 12"
+
+    tcltest::test test8 {::sqawk::splitmerge} \
+            -setup $setup \
+            -body {
+        source sqawk.tcl
+        set result {}
+        set lambda {
+            {from to {sep AB}} {
+                set startingList [list start u v w x y z tail]
+                set result {}
+                lappend result [lrange $startingList 0 $from-1]
+                lappend result [join [lrange $startingList $from $to] $sep]
+                lappend result [lrange $startingList $to+1 end]
+                return [string trim [join $result { }] { }]
+            }
+        }
+        for {set i 0} {$i < 20} {incr i} {
+            for {set j 0} {$j <= $i} {incr j} {
+                set literalSplit [::sqawk::splitmerge \
+                        startABuABvABwABxAByABzABtail {AB} [list $j $i]]
+                set regexpSplit [::sqawk::splitmerge \
+                        startABuABvABwABxAByABzABtail {(AB?)+} [list $j $i]]
+                set correct [apply $lambda $j $i]
+                set match [expr {
+                    ($literalSplit eq $correct) && ($regexpSplit eq $correct)
+                }]
+                lappend result $match
+            }
+        }
+
+        return [lsort -unique $result]
+    } -result 1
+
+    tcltest::test test9 {merge option} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "foo 1   foo 2   foo 3"
+            puts $ch "bar    4 bar    5 bar    6"
+            close $ch
+            set result [exec tclsh sqawk.tcl -OFS - {
+                select a1, a2, a3 from a
+            } {merge=0-1,2-3,4-5} $filename]
+        }
+        return $result
+    } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {

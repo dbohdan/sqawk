@@ -32,8 +32,8 @@ namespace eval ::sqawk::script {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
     }
 
-    # Returns column name for column number $i, custom (if present) or
-    # automatically generate.
+    # Return column name for column number $i, custom (if present) or
+    # automatically generated.
     method column-name i {
         set customColName [lindex [$self cget -header] $i-1]
         if {($i > 0) && ($customColName ne "")} {
@@ -61,7 +61,8 @@ namespace eval ::sqawk::script {
         [$self cget -database] eval [subst $command]
     }
 
-    # Insert each row from the list $rows into the table in a transaction.
+    # Insert each row from the list $rows into the database table in a
+    # transaction.
     method insert-rows rows {
         set db [$self cget -database]
         set colPrefix [$self cget -columnprefix]
@@ -71,7 +72,7 @@ namespace eval ::sqawk::script {
 
         set rowInsertCommand {
             INSERT INTO $tableName ($insertColumnNames)
-            VALUES ($insertValues);
+            VALUES ($insertValues)
         }
 
         set maxNF [$self cget -maxnf]
@@ -81,10 +82,14 @@ namespace eval ::sqawk::script {
 
         $db transaction {
             foreach row $rows {
-                set insertColumnNames "${colPrefix}nf,${colPrefix}0,"
-                set insertValues {$nf,$row,}
-                set i 1
                 set nf [llength $row]
+                set insertColumnNames "${colPrefix}nf,${colPrefix}0"
+                set insertValues {$nf,$row}
+                if {$nf > 0} {
+                    append insertColumnNames ,
+                    append insertValues ,
+                }
+                set i 1
                 foreach field $row {
                     set lastRow [expr { $i == $nf }]
                     set $columnNames($i) $field
@@ -119,10 +124,123 @@ proc ::sqawk::lshift! {varName {n 1}} {
     return $result
 }
 
+# Find which part of the range $number is for the first range it falls into in
+# out of the ranges in $rangeList. $rangeList should have the format {from1 to1
+# from2 to2 ...}.
+proc ::sqawk::range-position {number rangeList} {
+    foreach {first last} $rangeList {
+        if {$number == $first} {
+            if {$first == $last} {
+                return both
+            } else {
+                return first
+            }
+        } elseif {$number == $last} {
+            return last
+        }
+    }
+    return none
+}
+
+# If $merge is false lappend $elem to the list stored in $varName. If $merge is
+# true append it to the last element of the same list.
+proc ::sqawk::lappend-merge! {varName elem merge} {
+    upvar 1 $varName list
+    if {$merge} {
+        lset list end [lindex $list end]$elem
+    } else {
+        lappend list $elem
+    }
+}
+
+# Split $str on separators that match $regexp. Returns the resulting list of
+# fields with field ranges in $mergeRanges merged together with the separators
+# between them preserved.
+#
+# This procedure is based in part on ::textutil::split::splitx from Tcllib,
+# which was originally developed by Bob Techentin and released into the public
+# domain by him.
+#
+# ::textutil::split carries the following copyright notice:
+# *****************************************************************************
+#       Various ways of splitting a string.
+#
+# Copyright (c) 2000      by Ajuba Solutions.
+# Copyright (c) 2000      by Eric Melski <ericm@ajubasolutions.com>
+# Copyright (c) 2001      by Reinhard Max <max@suse.de>
+# Copyright (c) 2003      by Pat Thoyts <patthoyts@users.sourceforge.net>
+# Copyright (c) 2001-2006 by Andreas Kupries
+#                                       <andreas_kupries@users.sourceforge.net>
+#
+# See the file "license.terms" for information on usage and redistribution
+# of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+# *****************************************************************************
+# The contents of "license.terms" can be found in the file "LICENSE.Tcllib".
+proc ::sqawk::splitmerge {str regexp mergeRanges} {
+    if {$str eq {}} {
+        return {}
+    }
+    if {$regexp eq {}} {
+        return [split $str {}]
+    }
+
+    set mergeRangesFiltered {}
+    foreach {first last} $mergeRanges {
+        if {$first < $last} {
+            lappend mergeRangesFiltered $first $last
+        }
+    }
+
+    # Split $str into a list of fields and separators.
+    set fields {}
+    set offset 0
+    set merging 0
+    set i 0
+    set rangePos none
+    while {[regexp -start $offset -indices -- $regexp $str match]} {
+        lassign $match matchStart matchEnd
+        set field [string range $str $offset $matchStart-1]
+
+        set rangePos [::sqawk::range-position $i $mergeRangesFiltered]
+        ::sqawk::lappend-merge! fields $field $merging
+        # Switch merging on the first field of a merge range and off on the
+        # last.
+        if {$rangePos eq {first}} {
+            set merging 1
+        } elseif {$rangePos eq {last}} {
+            set merging 0
+        }
+        incr i
+
+        set sep [string range $str $matchStart $matchEnd]
+        # Append the separator if merging.
+        if {$merging} {
+            ::sqawk::lappend-merge! fields $sep $merging
+        }
+
+        incr matchEnd
+        set offset $matchEnd
+    }
+    # Handle the remainer of $str after all the separators.
+    set tail [string range $str $offset end]
+    if {$tail ne {}} {
+        if {$rangePos eq {first}} {
+            set merging 1
+        }
+        if {$rangePos eq {last}} {
+            set merging 0
+        }
+        ::sqawk::lappend-merge! fields $tail $merging
+    }
+
+    return $fields
+}
+
+
 # Performs SQL queries on files and channels.
 ::snit::type ::sqawk::sqawk {
     variable tables {}
-    variable defaultTableNames [split {abcdefghijklmnopqrstuvwxyz} ""]
+    variable defaultTableNames [split abcdefghijklmnopqrstuvwxyz ""]
 
     option -database
     option -ofs
@@ -134,8 +252,9 @@ proc ::sqawk::lshift! {varName {n 1}} {
         }
     }
 
-    # Read data from the file specified in the dictionary $fileOptions into a
-    # new database table.
+    # Read data from a file or a channel into a new database table. The filename
+    # or channel to read from and the options for how to read and store the data
+    # are in all set in the dictionary $fileOptions.
     method read-file fileOptions {
         # Set the default table name ("a", "b", "c", ..., "z").
         set defaultTableName [lindex $defaultTableNames [dict size $tables]]
@@ -143,7 +262,6 @@ proc ::sqawk::lshift! {varName {n 1}} {
         # Set the default column name prefix equal to the table name.
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]
-        ::sqawk::dict-ensure-default fileOptions header 0
 
         array set metadata $fileOptions
 
@@ -157,22 +275,40 @@ proc ::sqawk::lshift! {varName {n 1}} {
         }
         set records [::textutil::splitx [read $ch] $metadata(RS)]
         close $ch
-
+        # Remove final record if empty (typically due to a newline at the end of
+        # the file).
         if {[lindex $records end] eq ""} {
             set records [lrange $records 0 end-1]
         }
+
+        # Split records into fields.
         set rows {}
-        foreach record $records {
-            lappend rows [::textutil::splitx $record $metadata(FS)]
+        if {[info exists metadata(merge)]} {
+            # Allow both the {1-2,3-4,5-6} and the {1 2 3 4 5 6} syntax for the
+            # merge option.
+            set rangeRegexp {[0-9]+-[0-9]+}
+            set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
+            if {[regexp $overallRegexp $metadata(merge)]} {
+                set metadata(merge) [string map {- { } , { }} $metadata(merge)]
+            }
+            foreach record $records {
+                lappend rows [::sqawk::splitmerge \
+                        $record $metadata(FS) $metadata(merge)]
+            }
+        } else {
+            foreach record $records {
+                lappend rows [::textutil::splitx $record $metadata(FS)]
+            }
         }
 
         # Create and configure a new table object.
         set newTable [::sqawk::table create %AUTO%]
-        $newTable configure -database [$self cget -database]
-        $newTable configure -dbtable $metadata(table)
-        $newTable configure -columnprefix $metadata(prefix)
-        $newTable configure -maxnf $metadata(NF)
-        if {$metadata(header)} {
+        $newTable configure \
+                -database [$self cget -database] \
+                -dbtable $metadata(table) \
+                -columnprefix $metadata(prefix) \
+                -maxnf $metadata(NF)
+        if {[info exists metadata(header)] && $metadata(header)} {
             $newTable configure -header [lindex [::sqawk::lshift! rows] 0]
         }
         $newTable initialize
@@ -254,22 +390,22 @@ proc ::sqawk::script::process-options {argv} {
 
     # Filenames and individual file settings.
     set fileCount 0
-    set fileOptions {}
+    set fileOptionsForAllFiles {}
     set defaultFileOptions [::sqawk::script::filter-keys $cmdOptions {
         FS RS NF
     }]
-    set currentFileSettings $defaultFileOptions
+    set currentFileOptions $defaultFileOptions
     while {[llength $argv] > 0} {
         lassign [::sqawk::lshift! argv] elem
         # setting=value
         if {[regexp {([^=]+)=(.*)} $elem _ key value]} {
-            dict set currentFileSettings $key $value
+            dict set currentFileOptions $key $value
         } else {
             # Filename.
             if {[file exists $elem] || ($elem eq "-")} {
-                dict set currentFileSettings filename $elem
-                lappend fileOptions $currentFileSettings
-                set currentFileSettings $defaultFileOptions
+                dict set currentFileOptions filename $elem
+                lappend fileOptionsForAllFiles $currentFileOptions
+                set currentFileOptions $defaultFileOptions
                 incr fileCount
             } else {
                 error "can't find file \"$elem\""
@@ -277,13 +413,13 @@ proc ::sqawk::script::process-options {argv} {
         }
     }
     # If no files are given add "-" (standard input) with the current settings
-    # to fileOptions.
+    # to fileOptionsForAllFiles.
     if {$fileCount == 0} {
-        dict set currentFileSettings filename -
-        lappend fileOptions $currentFileSettings
+        dict set currentFileOptions filename -
+        lappend fileOptionsForAllFiles $currentFileOptions
     }
 
-    return [list $script $globalOptions $fileOptions]
+    return [list $script $globalOptions $fileOptionsForAllFiles]
 }
 
 # Create an SQLite3 database for ::sqawk::sqawk to use.
@@ -302,7 +438,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     # Try to process the command line options.
     set error [catch {
         lassign [::sqawk::script::process-options $argv] \
-                script options fileOptions
+                script options fileOptionsForAllFiles
     } errorMessage]
     if {$error} {
         puts "error: $errorMessage"
@@ -311,16 +447,19 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
 
     # Initialize Sqawk and the corresponding database.
     ::sqawk::script::create-database $databaseHandle
-    set obj [::sqawk::sqawk create %AUTO%]
-    $obj configure -database $databaseHandle
-    $obj configure -ofs [dict get $options OFS]
-    $obj configure -ors [dict get $options ORS]
+    set sqawkObj [::sqawk::sqawk create %AUTO%]
+    $sqawkObj configure \
+            -database $databaseHandle \
+            -ofs [dict get $options OFS] \
+            -ors [dict get $options ORS]
 
-    foreach file $fileOptions {
-        $obj read-file $file
+    foreach file $fileOptionsForAllFiles {
+        $sqawkObj read-file $file
     }
 
-    set error [catch { $obj perform-query $script } errorMessage errorOptions]
+    set error [catch {
+        $sqawkObj perform-query $script
+    } errorMessage errorOptions]
     if {$error} {
         # Ignore errors caused by stdout being closed during output (e.g., if
         # someone is piping the output to head(1)).
@@ -328,7 +467,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
             return -options $errorOptions $errorMessage
         }
     }
-    $obj destroy
+    $sqawkObj destroy
 }
 
 # If this is the main script...

@@ -56,7 +56,8 @@ These options are set before a filename and only affect one file.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| header | `header=1` | Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
+| header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
+| merge | `merge=1-2,3-5`, `merge=1 2 3 5` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, ...  |
 | FS | `FS=,` | Same as -FS but for one file. |
