@@ -40,6 +40,10 @@ namespace eval ::sqawk::tests {
         }
     }
 
+    proc sqawk-tcl args {
+        exec [info nameofexecutable] sqawk.tcl {*}$args
+    }
+
     tcltest::test test1 {Handle broken pipe, read from stdin} \
             -constraints unix \
             -setup $setup \
@@ -47,8 +51,7 @@ namespace eval ::sqawk::tests {
         with-temp-files filename ch {
             puts $ch "line 1\nline 2\nline 3"
             close $ch
-            set result [exec \
-                    tclsh sqawk.tcl {select a0 from a} < $filename | head -n 1]
+            set result [sqawk-tcl {select a0 from a} < $filename | head -n 1]
         }
         return $result
     } -result {line 1}
@@ -59,11 +62,11 @@ namespace eval ::sqawk::tests {
         set result {}
         # Bad query.
         lappend result [catch {
-            exec tclsh sqawk.tcl -1 asdf sqawk.tcl
+            sqawk-tcl -1 asdf sqawk-tcl
         }]
         # Missing file.
         lappend result [catch {
-            exec tclsh sqawk.tcl -1 {select a0 from a} missing-file
+            sqawk-tcl -1 {select a0 from a} missing-file
         }]
         return $result
     } -result {1 1}
@@ -73,7 +76,7 @@ namespace eval ::sqawk::tests {
             -setup $setup \
             -body {
         with-temp-files filename {
-            exec tclsh sqawk.tcl {
+            sqawk-tcl {
                 select a1, b1, a2 from a inner join b on a2 = b2
                 where b1 < 10000 order by b1
             } examples/hp/MD5SUMS examples/hp/du-bytes > $filename
@@ -89,7 +92,7 @@ namespace eval ::sqawk::tests {
             -body {
         with-temp-files filename {
             set dir examples/three-files/
-            exec tclsh sqawk.tcl -FS , {
+            sqawk-tcl -FS , {
                 select a1, a2, b2, c2 from a inner join b on a1 = b1
                 inner join c on a1 = c1
             } $dir/1 FS=_ FS=, $dir/2 $dir/3 > $filename
@@ -109,7 +112,7 @@ namespace eval ::sqawk::tests {
                 puts $ch2 "bar 4\nbar 5\nbar 6"
                 close $ch1
                 close $ch2
-                set result [exec tclsh sqawk.tcl {
+                set result [sqawk-tcl {
                     select foo2 from foo; select b2 from b
                 } table=foo $filename1 $filename2]
             }
@@ -125,7 +128,7 @@ namespace eval ::sqawk::tests {
             puts $ch2 "bar 4\nbar 5\nbar 6"
             close $ch1
             close $ch2
-            set result [exec tclsh sqawk.tcl {
+            set result [sqawk-tcl {
                 select foo.x2 from foo; select baz2 from bar
             } table=foo prefix=x $filename1 table=bar prefix=baz $filename2]
         }
@@ -141,7 +144,7 @@ namespace eval ::sqawk::tests {
             puts $ch "James\tHead of marketing\t11\t555-1235"
             puts $ch "McDonald\tDeveloper\t12\t555-1236\tGood at tables"
             close $ch
-            set result [exec tclsh sqawk.tcl {
+            set result [sqawk-tcl {
                 select name, office from staff
                 where position = "CEO"
                         or staff.phone = "555-1234"
@@ -187,15 +190,38 @@ namespace eval ::sqawk::tests {
             -setup $setup \
             -body {
         with-temp-files filename ch {
+            set result {}
             puts $ch "foo 1   foo 2   foo 3"
             puts $ch "bar    4 bar    5 bar    6"
             close $ch
-            set result [exec tclsh sqawk.tcl -OFS - {
+            lappend result [sqawk-tcl -OFS - {
                 select a1, a2, a3 from a
             } {merge=0-1,2-3,4-5} $filename]
+            lappend result [sqawk-tcl -OFS - {
+                select a1, a2, a3 from a
+            } {merge=0 1 2 3 4 5} $filename]
         }
-        return $result
+        return [lindex [lsort -unique $result] 0]
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
+
+    tcltest::test test10 {CSV} \
+            -setup $setup \
+            -body {
+        with-temp-files filename1 ch1 filename2 ch2 {
+            set result {}
+            puts $ch1 "1,2,\"Hello, World!\"\nΑλαμπουρνέζικα,3,4\n5,6,7"
+            close $ch1
+            puts $ch2 "1;2;\"Hello, World!\"\nΑλαμπουρνέζικα;3;4\n5;6;7"
+            close $ch2
+            lappend result [sqawk-tcl -OFS - {
+                select a1, a2, a3 from a
+            } csv=1 $filename1]
+            lappend result [sqawk-tcl -OFS - {
+                select a1, a2, a3 from a
+            } csv=alt {csvsep=;} $filename2]
+        }
+        return [lindex [lsort -unique $result] 0]
+    } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {

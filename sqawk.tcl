@@ -252,6 +252,86 @@ proc ::sqawk::splitmerge {str regexp mergeRanges} {
         }
     }
 
+    # Convert raw text data into a list of database rows using regular
+    # expressions.
+    method Convert-raw-data-to-rows {data RS FS mergeRanges} {
+        # Split the raw data into records.
+        set records [::textutil::splitx $data $RS]
+        # Remove final record if empty (typically due to a newline at the end of
+        # the file).
+        if {[lindex $records end] eq ""} {
+            set records [lrange $records 0 end-1]
+        }
+
+        # Split records into fields.
+        set rows {}
+        if {$mergeRanges ne {}} {
+            # Allow both the {1-2,3-4,5-6} and the {1 2 3 4 5 6} syntax for the
+            # "merge" option.
+            set rangeRegexp {[0-9]+-[0-9]+}
+            set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
+            if {[regexp $overallRegexp $mergeRanges]} {
+                set mergeRanges [string map {- { } , { }} $mergeRanges]
+            }
+            foreach record $records {
+                lappend rows [::sqawk::splitmerge $record $FS $mergeRanges]
+            }
+        } else {
+            foreach record $records {
+                lappend rows [::textutil::splitx $record $FS]
+            }
+        }
+
+        return $rows
+    }
+
+    # Convert CSV data into a list of database rows.
+    method Convert-csv-to-rows {data {separator ,} {quote \"} {altMode 0}} {
+        package require csv
+
+        set rows {}
+        set lines [split $data \n]
+        if {[lindex $lines end] eq {}} {
+            set lines [lrange $lines 0 end-1]
+        }
+        set error [catch {
+            set opts {}
+            if {$altMode} {
+                set opts -alternate
+            }
+            foreach line $lines {
+                lappend rows [::csv::split {*}$opts $line $separator $quote]
+            }
+        } errorMessage errorOptions]
+        if {$error} {
+            dict set errorOptions \
+                    -errorinfo "CSV decoding error:\
+                            [dict get $errorOptions -errorinfo]"
+            return -options $errorOptions $errorMessage
+        }
+
+        return $rows
+    }
+
+    # Returns whether CSV mode should be on and whether alternative CSV parsing
+    # should be used based on the value of the "csv" file option.
+    method Parse-csv-mode csv {
+        set altMode 0
+        if {($csv eq {}) || ([string is boolean -strict $csv] && !$csv)} {
+            return [list 0 0]
+        }
+
+        if {[string is boolean -strict $csv]} { ;# true
+            set altMode 0
+        } elseif {($csv == 2) || ($csv eq {alt})} {
+            set altMode 1
+        } else {
+            error "unknown CSV mode: \"$csv\""
+        }
+
+        return [list 1 $altMode]
+    }
+
     # Read data from a file or a channel into a new database table. The filename
     # or channel to read from and the options for how to read and store the data
     # are in all set in the dictionary $fileOptions.
@@ -262,10 +342,14 @@ proc ::sqawk::splitmerge {str regexp mergeRanges} {
         # Set the default column name prefix equal to the table name.
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]
+        ::sqawk::dict-ensure-default fileOptions merge {}
+        ::sqawk::dict-ensure-default fileOptions csv {}
+        ::sqawk::dict-ensure-default fileOptions csvsep ,
+        ::sqawk::dict-ensure-default fileOptions csvquote \"
 
         array set metadata $fileOptions
 
-        # Read the data. Split it first into records then into fields.
+        # Read the data.
         if {[info exists metadata(channel)]} {
             set ch $metadata(channel)
         } elseif {$metadata(filename) eq "-"} {
@@ -273,33 +357,18 @@ proc ::sqawk::splitmerge {str regexp mergeRanges} {
         } else {
             set ch [open $metadata(filename)]
         }
-        set records [::textutil::splitx [read $ch] $metadata(RS)]
+        set raw [read $ch]
         close $ch
-        # Remove final record if empty (typically due to a newline at the end of
-        # the file).
-        if {[lindex $records end] eq ""} {
-            set records [lrange $records 0 end-1]
-        }
 
-        # Split records into fields.
-        set rows {}
-        if {[info exists metadata(merge)]} {
-            # Allow both the {1-2,3-4,5-6} and the {1 2 3 4 5 6} syntax for the
-            # merge option.
-            set rangeRegexp {[0-9]+-[0-9]+}
-            set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
-            if {[regexp $overallRegexp $metadata(merge)]} {
-                set metadata(merge) [string map {- { } , { }} $metadata(merge)]
-            }
-            foreach record $records {
-                lappend rows [::sqawk::splitmerge \
-                        $record $metadata(FS) $metadata(merge)]
-            }
+        lassign [$self Parse-csv-mode $metadata(csv)] useCsvMode altMode
+        if {$useCsvMode} {
+            set rows [$self Convert-csv-to-rows $raw \
+                    $metadata(csvsep) $metadata(csvquote) $altMode]
         } else {
-            foreach record $records {
-                lappend rows [::textutil::splitx $record $metadata(FS)]
-            }
+            set rows [$self Convert-raw-data-to-rows $raw \
+                    $metadata(RS) $metadata(FS) $metadata(merge)]
         }
+        unset raw
 
         # Create and configure a new table object.
         set newTable [::sqawk::table create %AUTO%]

@@ -56,6 +56,7 @@ These options are set before a filename and only affect one file.
 
 | Option | Example | Comment |
 |--------|---------|---------|
+| csv | `csv=1` `csv=2 csvsep=;` | Parse the input file as CSV. `csv=2` and `csv=alt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) useful for parsing CSV files exported by Microsoft Excel. |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `merge=1 2 3 5` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
