@@ -26,6 +26,7 @@ namespace eval ::sqawk {}
         }
     }
 
+    # Update formatToParser dict when the option -parsers is set.
     method Set-parsers {option value} {
         if {$option ne {-parsers}} {
             error {Set-parsers is only for setting the option -parsers}
@@ -38,10 +39,11 @@ namespace eval ::sqawk {}
         }
     }
 
+    # Parse $data from $format into a list of rows.
     method Parse {format data fileOptions} {
         set ns [dict get $formatToParser $format]
         set parseOptions [set ${ns}::options]
-        # Override defaults.
+        # Override the defaults but do not pass any extra keys to the parser.
         dict for {key _} $parseOptions {
             if {[dict exists $fileOptions $key]} {
                 dict set parseOptions $key [dict get $fileOptions $key]

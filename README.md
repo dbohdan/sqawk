@@ -42,8 +42,8 @@ These options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| -FS value | `-FS '[ \t]+'` | Input field separator (one for all input files). |
-| -RS value | `-RS '\n'` | Input record separator (one for all input files). |
+| -FS value | `-FS '[ \t]+'` | Input field separator for the default parser (one for all input files). |
+| -RS value | `-RS '\n'` | Input record separator for the default parser (one for all input files). |
 | -OFS value | `-OFS ' '` | Output field separator. |
 | -ORS value | `-ORS '\n'` | Output record separator. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51`. |
@@ -56,14 +56,21 @@ These options are set before a filename and only affect one file.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| csv | `csv=1` `csv=2 csvsep=;` | Parse the input file as CSV. `csv=2` and `csv=alt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) useful for parsing CSV files exported by Microsoft Excel. |
+| format | `format=csv csvsep=;` | Set the input format. See below. |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `merge=1 2 3 5` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, ...  |
-| FS | `FS=,` | Same as -FS but for one file. |
-| RS | `RS=\n` | Same as -RS but for one file. |
 | NF | `NF=20` | Same as -NF but for one file. |
+
+### Format options
+
+A format option (`format=X`) sets the input parser with which Sqawk will parse the next input file. Formats have have multiple synonymous names or multiple names that produces slightly different effects.
+
+| Format | Additional options | Examples | Comment |
+|--------|--------------------|--------- |---------|
+| `awk` or `raw` | `FS`, `RS` | `RS=\n`, `FS=:` | The default input parser. Splits input into records then fields using regular expressions. `FS` and `RS` are the same as -FS and -RS respectively but only apply to one file. |
+| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input file as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) useful for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator. |
 
 # More examples
 
