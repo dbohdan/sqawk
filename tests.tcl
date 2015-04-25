@@ -154,7 +154,7 @@ namespace eval ::sqawk::tests {
         return $result
     } -result "Smith 10\nMcDonald 12"
 
-    tcltest::test test8 {::sqawk::splitmerge} \
+    tcltest::test test8 {::sqawk::parsers::awk::splitmerge} \
             -setup $setup \
             -body {
         source sqawk.tcl
@@ -171,9 +171,9 @@ namespace eval ::sqawk::tests {
         }
         for {set i 0} {$i < 20} {incr i} {
             for {set j 0} {$j <= $i} {incr j} {
-                set literalSplit [::sqawk::splitmerge \
+                set literalSplit [::sqawk::parsers::awk::splitmerge \
                         startABuABvABwABxAByABzABtail {AB} [list $j $i]]
-                set regexpSplit [::sqawk::splitmerge \
+                set regexpSplit [::sqawk::parsers::awk::splitmerge \
                         startABuABvABwABxAByABzABtail {(AB?)+} [list $j $i]]
                 set correct [apply $lambda $j $i]
                 set match [expr {
@@ -215,10 +215,10 @@ namespace eval ::sqawk::tests {
             close $ch2
             lappend result [sqawk-tcl -OFS - {
                 select a1, a2, a3 from a
-            } csv=1 $filename1]
+            } format=csv $filename1]
             lappend result [sqawk-tcl -OFS - {
                 select a1, a2, a3 from a
-            } csv=alt {csvsep=;} $filename2]
+            } format=csvalt {csvsep=;} $filename2]
         }
         return [lindex [lsort -unique $result] 0]
     } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
