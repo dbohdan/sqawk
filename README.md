@@ -28,7 +28,7 @@ In practice you would rather write
 sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
 ```
 
-[Skip down](#format-options) for more examples.
+[Skip down](#more-examples) for more examples.
 
 ## SQL
 
