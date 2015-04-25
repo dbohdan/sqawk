@@ -13,8 +13,7 @@ INSTALL_DATA    = $(INSTALL) -m 644
 
 DESTDIR =
 
-test:
-	tclsh tests.tcl
+default: test
 
 install: installdirs
 	$(INSTALL_PROGRAM) sqawk.tcl $(DESTDIR)$(bindir)/sqawk
@@ -22,4 +21,13 @@ install: installdirs
 installdirs:
 	mkdir -p $(DESTDIR)$(bindir)
 
-.PHONY: install installdirs
+sqawk:
+	tclsh tools/assemble.tcl sqawk-dev.tcl > sqawk.tcl
+
+test: sqawk
+	tclsh tests.tcl
+
+.POSIX:
+
+.PHONY: install installdirs sqawk test .POSIX
+

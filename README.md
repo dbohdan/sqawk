@@ -217,8 +217,16 @@ Once you have the dependencies installed run
 
     git clone https://github.com/dbohdan/sqawk
     cd sqawk
-    sh ./examples/test.sh
-    sudo make install ;# install to /usr/local/bin (not on Windows)
+    make
+    make test
+    sudo make install
+
+or on Windows
+
+    git clone https://github.com/dbohdan/sqawk
+    cd sqawk
+    assemble.cmd
+    tclsh tests.tcl
 
 # License
 
