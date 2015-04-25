@@ -6,7 +6,7 @@ namespace eval ::sqawk::parsers::csv {
     variable formats {
         csv csv2 csvalt
     }
-    variable fileOptions {
+    variable options {
         format csv
         csvsep ,
         csvquote \"

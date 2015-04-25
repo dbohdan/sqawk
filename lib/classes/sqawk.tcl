@@ -8,15 +8,46 @@ namespace eval ::sqawk {}
 ::snit::type ::sqawk::sqawk {
     variable tables {}
     variable defaultTableNames [split abcdefghijklmnopqrstuvwxyz ""]
+    variable formatToParser {}
 
     option -database
     option -ofs
     option -ors
+    option -parsers -default {} -configuremethod Set-parsers
+
+    constructor {} {
+        # Register parsers.
+        $self configure -parsers [namespace children ::sqawk::parsers]
+    }
 
     destructor {
         dict for {_ tableObj} $tables {
             $tableObj destroy
         }
+    }
+
+    method Set-parsers {option value} {
+        if {$option ne {-parsers}} {
+            error {Set-parsers is only for setting the option -parsers}
+        }
+        set options(-parsers) $value
+        foreach ns [$self cget -parsers] {
+            foreach format [set ${ns}::formats] {
+                dict set formatToParser $format $ns
+            }
+        }
+    }
+
+    method Parse {format data fileOptions} {
+        set ns [dict get $formatToParser $format]
+        set parseOptions [set ${ns}::options]
+        # Override defaults.
+        dict for {key _} $parseOptions {
+            if {[dict exists $fileOptions $key]} {
+                dict set parseOptions $key [dict get $fileOptions $key]
+            }
+        }
+        return [${ns}::parse $data $parseOptions]
     }
 
     # Read data from a file or a channel into a new database table. The filename
@@ -30,7 +61,7 @@ namespace eval ::sqawk {}
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]
         ::sqawk::dict-ensure-default fileOptions merge {}
-        ::sqawk::dict-ensure-default fileOptions format {}
+        ::sqawk::dict-ensure-default fileOptions format raw
         ::sqawk::dict-ensure-default fileOptions csvsep ,
         ::sqawk::dict-ensure-default fileOptions csvquote \"
 
@@ -47,21 +78,7 @@ namespace eval ::sqawk {}
         set raw [read $ch]
         close $ch
 
-        if {$metadata(format) in {csv csv2 csvalt}} {
-            set altMode 0
-            if {$metadata(format) in {csv2 csvalt}} {
-                set altMode 1
-            }
-            set rows [::sqawk::parsers::csv::parse $raw \
-                    [list csvsep $metadata(csvsep) \
-                            csvquote $metadata(csvquote) \
-                            format $metadata(format)]]
-        } else {
-            set rows [::sqawk::parsers::awk::parse $raw \
-                    [list RS $metadata(RS) \
-                            FS $metadata(FS) \
-                            merge $metadata(merge)]]
-        }
+        set rows [$self Parse $metadata(format) $raw $fileOptions]
         unset raw
 
         # Create and configure a new table object.

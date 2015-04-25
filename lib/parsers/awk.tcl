@@ -6,7 +6,7 @@ namespace eval ::sqawk::parsers::awk {
     variable formats {
         raw awk
     }
-    variable fileOptions {
+    variable options {
         FS {}
         RS {}
         merge {}
