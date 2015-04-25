@@ -9,7 +9,7 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.5.0
+    variable version 0.6.0
 }
 namespace eval ::sqawk::script {
     variable debug 0
