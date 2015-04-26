@@ -76,7 +76,7 @@ namespace eval ::sqawk {}
             set ns [dict get $formatToSerializer $format]
         }]
         if {$error} {
-            error "unknown serialization format: \"$format\""
+            error "unknown output format: \"$format\""
         }
         set serializeOptions [set ${ns}::options]
         return [${ns}::serialize $data \
@@ -122,7 +122,9 @@ namespace eval ::sqawk {}
                 -columnprefix $metadata(prefix) \
                 -maxnf $metadata(NF)
         if {[info exists metadata(header)] && $metadata(header)} {
-            $newTable configure -header [lindex [::sqawk::lshift! rows] 0]
+            # Remove the first field (a0/b0/...) from the header.
+            set header [lrange [lindex [::sqawk::lshift! rows] 0] 1 end]
+            $newTable configure -header $header
         }
         $newTable initialize
 

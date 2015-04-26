@@ -155,12 +155,12 @@ proc ::sqawk::parsers::awk::parse {data options} {
             set mergeRanges [string map {- { } , { }} $mergeRanges]
         }
         foreach record $records {
-            lappend rows [::sqawk::parsers::awk::splitmerge \
-                    $record $FS $mergeRanges]
+            lappend rows [list $record {*}[::sqawk::parsers::awk::splitmerge \
+                    $record $FS $mergeRanges]]
         }
     } else {
         foreach record $records {
-            lappend rows [::textutil::splitx $record $FS]
+            lappend rows [list $record {*}[::textutil::splitx $record $FS]]
         }
     }
 

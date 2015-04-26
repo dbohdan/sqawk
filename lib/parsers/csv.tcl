@@ -33,7 +33,7 @@ proc ::sqawk::parsers::csv::parse {data options} {
             set opts -alternate
         }
         foreach line $lines {
-            lappend rows [::csv::split {*}$opts $line $separator $quote]
+            lappend rows [list $line {*}[::csv::split {*}$opts $line $separator $quote]]
         }
     } errorMessage errorOptions]
     if {$error} {

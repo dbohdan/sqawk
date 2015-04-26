@@ -67,22 +67,15 @@ namespace eval ::sqawk {}
         $db transaction {
             foreach row $rows {
                 set nf [llength $row]
-                set insertColumnNames "${colPrefix}nf,${colPrefix}0"
-                set insertValues {$nf,$row}
-                if {$nf > 0} {
-                    append insertColumnNames ,
-                    append insertValues ,
-                }
-                set i 1
+                set insertColumnNames "${colPrefix}nf,"
+                set insertValues {$nf,}
+                set i 0
                 foreach field $row {
-                    set lastRow [expr { $i == $nf }]
                     set $columnNames($i) $field
                     append insertColumnNames $columnNames($i)
-                    if {!$lastRow} {
-                        append insertColumnNames ,
-                    }
                     append insertValues "\$$columnNames($i)"
-                    if {!$lastRow} {
+                    if {$i < ($nf - 1)} {
+                        append insertColumnNames ,
                         append insertValues ,
                     }
                     incr i
