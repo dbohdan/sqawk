@@ -31,3 +31,14 @@ proc ::sqawk::filter-keys {dictionary keyList {mustExist 1}} {
     }
     return $result
 }
+
+# Override the values for the existing keys in $dictionary but do add any new
+# keys to it.
+proc ::sqawk::override-keys {dictionary override} {
+    dict for {key _} $dictionary {
+        if {[dict exists $override $key]} {
+            dict set dictionary $key [dict get $override $key]
+        }
+    }
+    return $dictionary
+}

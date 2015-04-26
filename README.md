@@ -12,6 +12,8 @@ or
 
 `sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
+One of the filenames can be `-` for standard input.
+
 ## An example
 
 Here is a somewhat contrived example that shows a script, a global option and file options in use:
@@ -54,20 +56,20 @@ These options affect all files.
 
 ### Per-file options
 
-These options are set before a filename and only affect one file.
+These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| format | `format=csv csvsep=;` | Set the input format. See below. |
+| format | `format=csv csvsep=;` | Set the input format for the next source of input. See [input format options](#input-format-options). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `merge=1 2 3 5` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
-| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in table names `a`, `foo`, `c`, ...  |
+| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
 
-### Format options
+### Input format options
 
-A format option (`format=x`) sets the input parser with which Sqawk will parse the next input file. Formats can have multiple synonymous names or multiple names that produce slightly different effects. Selecting an input format can enable additional per-file options that only work with that format.
+A format option (`format=x`) selects the input parser with which Sqawk will parse the next input source. Formats can have multiple synonymous names or multiple names that produce slightly different effects. Selecting an input format can enable additional per-file options that only work with that format.
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|

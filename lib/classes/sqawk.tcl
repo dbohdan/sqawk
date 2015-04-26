@@ -6,18 +6,26 @@ namespace eval ::sqawk {}
 
 # Performs SQL queries on files and channels.
 ::snit::type ::sqawk::sqawk {
+    # Internal object state.
     variable tables {}
     variable defaultTableNames [split abcdefghijklmnopqrstuvwxyz ""]
-    variable formatToParser {}
+    variable formatToParser
+    variable formatToSerializer
 
+    # Options.
     option -database
     option -ofs
     option -ors
-    option -parsers -default {} -configuremethod Set-parsers
 
+    option -outputformat -default awk
+    option -parsers -default {} -configuremethod Set-and-update-format-list
+    option -serializers -default {} -configuremethod Set-and-update-format-list
+
+    # Methods.
     constructor {} {
-        # Register parsers.
+        # Register parsers and serializers.
         $self configure -parsers [namespace children ::sqawk::parsers]
+        $self configure -serializers [namespace children ::sqawk::serializers]
     }
 
     destructor {
@@ -26,30 +34,53 @@ namespace eval ::sqawk {}
         }
     }
 
-    # Update formatToParser dict when the option -parsers is set.
-    method Set-parsers {option value} {
-        if {$option ne {-parsers}} {
-            error {Set-parsers is only for setting the option -parsers}
+    # Update the related format dictionary when the parser or the serializer
+    # list option is set.
+    method Set-and-update-format-list {option value} {
+        set optToDict {
+            -parsers formatToParser
+            -serializers formatToSerializer
         }
-        set options(-parsers) $value
-        foreach ns [$self cget -parsers] {
+        set possibleOpts [dict keys $optToDict]
+        if {$option ni $possibleOpts} {
+            error "Set-and-update-format-list can't set the option \"$option\""
+        }
+        set options($option) $value
+
+        set dictName [dict get $optToDict $option]
+        set $dictName {}
+        # For each parser/serializer...
+        foreach ns $value {
             foreach format [set ${ns}::formats] {
-                dict set formatToParser $format $ns
+                dict set $dictName $format $ns
             }
         }
     }
 
     # Parse $data from $format into a list of rows.
     method Parse {format data fileOptions} {
-        set ns [dict get $formatToParser $format]
-        set parseOptions [set ${ns}::options]
-        # Override the defaults but do not pass any extra keys to the parser.
-        dict for {key _} $parseOptions {
-            if {[dict exists $fileOptions $key]} {
-                dict set parseOptions $key [dict get $fileOptions $key]
-            }
+        set error [catch {
+            set ns [dict get $formatToParser $format]
+        }]
+        if {$error} {
+            error "unknown input format: \"$format\""
         }
-        return [${ns}::parse $data $parseOptions]
+        set parseOptions [set ${ns}::options]
+        return [${ns}::parse $data \
+                [::sqawk::override-keys $parseOptions $fileOptions]]
+    }
+
+    # Serialize a list of rows into text in the format $format.
+    method Serialize {format data sqawkOptions} {
+        set error [catch {
+            set ns [dict get $formatToSerializer $format]
+        }]
+        if {$error} {
+            error "unknown serialization format: \"$format\""
+        }
+        set serializeOptions [set ${ns}::options]
+        return [${ns}::serialize $data \
+                [::sqawk::override-keys $serializeOptions $sqawkOptions]]
     }
 
     # Read data from a file or a channel into a new database table. The filename
@@ -105,14 +136,21 @@ namespace eval ::sqawk {}
     # Perform query $query and output the result to $channel.
     method perform-query {query {channel stdout}} {
         # For each row returned...
+        set outputRecords {}
         [$self cget -database] eval $query results {
             set outputRecord {}
             set keys $results(*)
             foreach key $keys {
                 lappend outputRecord $results($key)
             }
-            set output [join $outputRecord [$self cget -ofs]][$self cget -ors]
-            puts -nonewline $channel $output
+            lappend outputRecords $outputRecord
         }
+        set sqawkOptions {}
+        foreach option [$self info options] {
+            dict set sqawkOptions $option [$self cget $option]
+        }
+        set output [$self Serialize [$self cget -outputformat] $outputRecords \
+                $sqawkOptions]
+        puts -nonewline $channel $output
     }
 }

@@ -9,13 +9,14 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.7.1
+    variable version 0.8.0
 }
 
 interp alias {} ::source+ {} ::source
 source+ lib/utils.tcl
 source+ lib/parsers/awk.tcl
 source+ lib/parsers/csv.tcl
+source+ lib/serializers/awk.tcl
 source+ lib/classes/table.tcl
 source+ lib/classes/sqawk.tcl
 
@@ -36,6 +37,7 @@ proc ::sqawk::script::process-options {argv} {
         {OFS.arg { } "Output field separator"}
         {ORS.arg {\n} "Output record separator"}
         {NF.arg 10 "Maximum NF value for all files"}
+        {output.arg {awk} "Output format"}
         {v "Print version"}
         {1 "One field only. A shortcut for -FS '^$'"}
     }
@@ -66,7 +68,7 @@ proc ::sqawk::script::process-options {argv} {
     }
 
     # Settings that affect the Sqawk object itself.
-    set globalOptions [::sqawk::filter-keys $cmdOptions { OFS ORS }]
+    set globalOptions [::sqawk::filter-keys $cmdOptions { OFS ORS output }]
 
     # Filenames and individual file settings.
     set fileCount 0
@@ -131,7 +133,8 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     $sqawkObj configure \
             -database $databaseHandle \
             -ofs [dict get $options OFS] \
-            -ors [dict get $options ORS]
+            -ors [dict get $options ORS] \
+            -outputformat [dict get $options output]
 
     foreach file $fileOptionsForAllFiles {
         $sqawkObj read-file $file
