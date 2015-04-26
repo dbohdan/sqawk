@@ -48,9 +48,10 @@ These options affect all files.
 |--------|---------|---------|
 | -FS value | `-FS '[ \t]+'` | Input field separator for the default parser (one for all input files). |
 | -RS value | `-RS '\n'` | Input record separator for the default parser (one for all input files). |
-| -OFS value | `-OFS ' '` | Output field separator. |
-| -ORS value | `-ORS '\n'` | Output record separator. |
+| -OFS value | `-OFS ' '` | Output field separator for the default serializer. |
+| -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51`. |
+| -output value | `-output awk`, `-output csv` | The output format. Currently can be `awk` (the default) or `csv`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 
@@ -242,5 +243,7 @@ or on Windows
 # License
 
 MIT.
+
+`lib/parsers/awk.tcl` contains code derived from Tcllib, which is licensed under the standard Tcl license. See `LICENSE.Tcllib`.
 
 `squawk.jpg` photograph by [Terry Foote](https://en.wikipedia.org/wiki/User:Terry_Foote) at [English Wikipedia](https://en.wikipedia.org/wiki/). It is licensed under [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/).

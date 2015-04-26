@@ -204,7 +204,7 @@ namespace eval ::sqawk::tests {
         return [lindex [lsort -unique $result] 0]
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test test10 {CSV} \
+    tcltest::test test10 {CSV input} \
             -setup $setup \
             -body {
         with-temp-files filename1 ch1 filename2 ch2 {
@@ -223,7 +223,7 @@ namespace eval ::sqawk::tests {
         return [lindex [lsort -unique $result] 0]
     } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
 
-    tcltest::test test11 {Output format} \
+    tcltest::test test11 {Default output format} \
             -setup $setup \
             -body {
         with-temp-files filename ch {
@@ -257,6 +257,20 @@ namespace eval ::sqawk::tests {
         }
         return $result
     } -result [list "\n\n\n" "\n\n\n"]
+
+    tcltest::test test14 {CSV output} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "a,b\n1,2"
+            close $ch
+            set result {}
+            lappend result [sqawk-tcl -output awk {select a1 from a} $filename]
+            lappend result [sqawk-tcl -output csv {select a1 from a} $filename]
+        }
+        return $result
+    } -result [list "a,b\n1,2" "\"a,b\"\n\"1,2\""]
+
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {
