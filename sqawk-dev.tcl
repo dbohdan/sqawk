@@ -18,6 +18,7 @@ source+ lib/parsers/awk.tcl
 source+ lib/parsers/csv.tcl
 source+ lib/serializers/awk.tcl
 source+ lib/serializers/csv.tcl
+source+ lib/serializers/tcl.tcl
 source+ lib/classes/table.tcl
 source+ lib/classes/sqawk.tcl
 

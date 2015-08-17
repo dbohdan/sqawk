@@ -271,6 +271,18 @@ namespace eval ::sqawk::tests {
         return $result
     } -result [list "a,b\n1,2" "\"a,b\"\n\"1,2\""]
 
+    tcltest::test test14 {Tcl output} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "1\t2\tHello, World!\t "
+            close $ch
+            set result [sqawk-tcl \
+                    -FS \t -output tcl {select a1,a2,a3,a4 from a} $filename]
+        }
+        return $result
+    } -result {{1 2 {Hello, World!} { }}}
+
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {
