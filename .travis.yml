@@ -1,6 +1,10 @@
 language: generic
-before_install:
-- sudo apt-get update -qq
-install:
-- sudo apt-get -y install tcl tcllib libsqlite3-tcl
-script: make test
+sudo: false
+addons:
+  apt:
+    packages:
+      - tcl
+      - tcllib
+      - libsqlite3-tcl
+script:
+  - make test
