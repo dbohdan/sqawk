@@ -218,6 +218,11 @@ On **Fedora**, **RHEL** and **CentOS**:
 
     su -
     yum install tcl tcllib sqlite-tcl
+    
+On **FreeBSD 10**:
+
+    sudo pkg install tcl86 tcllib tcl-sqlite3
+    sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
 
 On **Windows** the easiest option is to install [ActiveTcl](http://www.activestate.com/activetcl/downloads) from ActiveState.
 
