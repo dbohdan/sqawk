@@ -36,7 +36,7 @@ sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
 
 A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 dialect of SQL.
 
-The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any file with a file option. The table name is used as a prefix in its fields' names, e.g., the fields are named `a1`, `a2`, etc. in `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
+The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any one file with a file option. The table name is used as a prefix in its fields' names; the fields are named `a1`, `a2`, etc. in the table `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
 
 ## Options
 
@@ -51,7 +51,7 @@ These options affect all files.
 | -OFS value | `-OFS ' '` | Output field separator for the default serializer. |
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51`. |
-| -output value | `-output awk`, `-output csv` | The output format. Currently can be `awk` (the default) or `csv`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
+| -output value | `-output awk`, `-output csv` | The output format. Currently can be `awk` (the default) `csv` or `tcl`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 
@@ -218,8 +218,8 @@ On **Fedora**, **RHEL** and **CentOS**:
 
     su -
     yum install tcl tcllib sqlite-tcl
-    
-On **FreeBSD 10**:
+
+On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
 
     sudo pkg install tcl86 tcllib tcl-sqlite3
     sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
