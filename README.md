@@ -50,7 +50,8 @@ These options affect all files.
 | -RS value | `-RS '\n'` | Input record separator for the default parser (one for all input files). |
 | -OFS value | `-OFS ' '` | Output field separator for the default serializer. |
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
-| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51`. |
+| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
+| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | NF mode, used if record exceed maximum number of fields:  `expand` - automatically enlarge `NF` and expand (alter) table during import if record contains more fields; `crop` - truncate record to `NF` value (fields exceed a `NF` value will be not imported); `normal` - produce an error like `table x has no column named x11` if record contains more fields. |
 | -output value | `-output awk`, `-output csv` | The output format. Currently can be `awk` (the default) `csv` or `tcl`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
@@ -67,6 +68,7 @@ These options are set before a filename and only affect one input source.
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
+| MNF | `MNF=crop` | Same as -MNF but for one file (table). |
 
 ### Input format options
 

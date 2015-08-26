@@ -39,6 +39,7 @@ proc ::sqawk::script::process-options {argv} {
         {OFS.arg { } "Output field separator"}
         {ORS.arg {\n} "Output record separator"}
         {NF.arg 10 "Maximum NF value for all files"}
+        {MNF.arg {expand} "NF mode (expand, normal or crop)"}
         {output.arg {awk} "Output format"}
         {v "Print version"}
         {1 "One field only. A shortcut for -FS '^$'"}
@@ -76,7 +77,7 @@ proc ::sqawk::script::process-options {argv} {
     set fileCount 0
     set fileOptionsForAllFiles {}
     set defaultFileOptions [::sqawk::filter-keys $cmdOptions {
-        FS RS NF
+        FS RS NF MNF
     }]
     set currentFileOptions $defaultFileOptions
     while {[llength $argv] > 0} {

@@ -30,7 +30,7 @@ namespace eval ::sqawk::tests {
                 lappend channels $channel
             }
         }
-        uplevel 1 $script
+        set res [catch {uplevel 1 $script} ret retopt]
 
         foreach channel $channels {
             catch { close $channel }
@@ -38,6 +38,8 @@ namespace eval ::sqawk::tests {
         foreach filename $files {
             file delete $filename
         }
+
+        return {*}$retopt $ret
     }
 
     proc sqawk-tcl args {
@@ -283,6 +285,82 @@ namespace eval ::sqawk::tests {
         return $result
     } -result {{1 2 {Hello, World!} { }}}
 
+    tcltest::test test-nf-1-crop {NF mode crop} \
+            -setup $setup \
+            -body {
+        set result {}
+        with-temp-files filename ch {
+            puts $ch "A B"
+            puts $ch "A B C"
+            puts $ch "A B C D"
+            close $ch
+            foreach nf {0 1 2 3} {
+                lappend result [sqawk-tcl \
+                    -FS " " -NF $nf -MNF crop -output tcl {select * from a} $filename]
+            }
+        }
+        return [join $result \n]
+    } -result [join {
+        {{1 1 {A B}} {2 1 {A B C}} {3 1 {A B C D}}}
+        {{1 2 {A B} A} {2 2 {A B C} A} {3 2 {A B C D} A}}
+        {{1 3 {A B} A B} {2 3 {A B C} A B} {3 3 {A B C D} A B}}
+        {{1 3 {A B} A B {}} {2 4 {A B C} A B C} {3 4 {A B C D} A B C}}
+    } \n]
+
+    tcltest::test test-nf-2-crop {NF mode expand} \
+            -setup $setup \
+            -body {
+        set result {}
+        with-temp-files filename ch {
+            puts $ch "A B C D"
+            puts $ch "A B C"
+            puts $ch "A B"
+            close $ch
+            foreach nf {2 3 4} {
+                lappend result [sqawk-tcl \
+                    -FS " " -NF $nf -MNF crop -output tcl {select * from a} $filename]
+            }
+        }
+        return [join $result \n]
+    } -result [join {
+        {{1 3 {A B C D} A B} {2 3 {A B C} A B} {3 3 {A B} A B}}
+        {{1 4 {A B C D} A B C} {2 4 {A B C} A B C} {3 3 {A B} A B {}}}
+        {{1 5 {A B C D} A B C D} {2 4 {A B C} A B C {}} {3 3 {A B} A B {} {}}}
+    } \n]
+
+    tcltest::test test-nf-3-expand {NF mode expand} \
+            -setup $setup \
+            -body {
+        set result {}
+        with-temp-files filename ch {
+            puts $ch "A B"
+            puts $ch "A B C"
+            puts $ch "A B C D"
+            close $ch
+            foreach nf {0 1 2 3} {
+                lappend result [sqawk-tcl \
+                    -FS " " -NF $nf -MNF expand -output tcl {select * from a} $filename]
+            }
+        }
+        return [join $result \n]
+    } -result [join {
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+    } \n]
+
+    tcltest::test test-nf-4-normal {NF mode normal} \
+            -setup $setup \
+            -body {
+        set result [catch {with-temp-files filename ch {
+            puts $ch "A B"
+            puts $ch "A B C"
+            close $ch
+            sqawk-tcl \
+                -FS " " -NF 2 -MNF normal -output tcl {select * from a} $filename
+        }} msg]
+    } -result 1
 
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {

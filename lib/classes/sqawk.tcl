@@ -120,7 +120,8 @@ namespace eval ::sqawk {}
                 -database [$self cget -database] \
                 -dbtable $metadata(table) \
                 -columnprefix $metadata(prefix) \
-                -maxnf $metadata(NF)
+                -maxnf $metadata(NF) \
+                -modenf $metadata(MNF)
         if {[info exists metadata(header)] && $metadata(header)} {
             # Remove the first field (a0/b0/...) from the header.
             set header [lrange [lindex [::sqawk::lshift! rows] 0] 1 end]
