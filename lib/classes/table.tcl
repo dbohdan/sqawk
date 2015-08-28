@@ -59,44 +59,44 @@ namespace eval ::sqawk {}
         set insertColumnNames [list "${colPrefix}nf"]
         set insertValues [list {$nf}]
 
-        set sub_rowInsertCommand {
-            # prepare statement (column names / variables for binding):
-            if {$curNF < $nf} {
-                set i $curNF
-                while {$i < $nf} {
-                    lappend insertColumnNames [$self column-name $i]
-                    lappend insertValues "\$cv($i)"
-                    incr i
-                }
-            } else {
-                set insertColumnNames [lrange $insertColumnNames 0 $nf]
-                set insertValues [lrange $insertValues 0 $nf]
-            }
-            # expand (alter) table if needed:
-            if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
-                for {set i $maxNF; incr i} {$i < $nf} {incr i} {
-                  $db eval "ALTER TABLE $tableName ADD COLUMN [$self column-name $i] INTEGER"
-                }
-                $self configure -maxnf [set maxNF [incr i -1]]
-            }
-            set curNF $nf
-            # create prepared statement (will be cached by "eval"):
-            set stat [set rowInsertCommand($curNF) "
-            INSERT INTO $tableName ([join $insertColumnNames ,])
-            VALUES ([join $insertValues ,])
-            "]
-        }
-
         $db transaction {
             foreach row $rows {
                 set nf [llength $row]
-                # crop (truncate row) if needed:
+                # Crop (truncate row) if needed.
                 if {$modeNF eq "crop" && $nf >= $maxNF} {
                     set nf [llength [set row [lrange $row 0 $maxNF]]]
                 }
-                # first prepare or if current row contains more fields as created - alter table (expand columns):
-                if {$nf != $curNF && [catch {set stat $rowInsertCommand($nf)}]} $sub_rowInsertCommand
-                # bind - set fileds to variables array:
+                # Prepare the command. If the current row contains more fields
+                # than exist alter the table adding columns.
+                if {$nf != $curNF &&
+                        [catch {set stat $rowInsertCommand($nf)}]} {
+                    if {$curNF < $nf} {
+                        set i $curNF
+                        while {$i < $nf} {
+                            lappend insertColumnNames [$self column-name $i]
+                            lappend insertValues "\$cv($i)"
+                            incr i
+                        }
+                    } else {
+                        set insertColumnNames [lrange $insertColumnNames 0 $nf]
+                        set insertValues [lrange $insertValues 0 $nf]
+                    }
+                    # Expand (alter) table if needed.
+                    if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
+                        for {set i $maxNF; incr i} {$i < $nf} {incr i} {
+                            $db eval "ALTER TABLE $tableName ADD COLUMN
+                                    [$self column-name $i] INTEGER"
+                        }
+                        $self configure -maxnf [set maxNF [incr i -1]]
+                    }
+                    set curNF $nf
+                    # Create a prepared statement (will be cached by "eval").
+                    set stat [set rowInsertCommand($curNF) "
+                    INSERT INTO $tableName ([join $insertColumnNames ,])
+                    VALUES ([join $insertValues ,])
+                    "]
+                }
+                # Puts fields into the array cv.
                 set i 0
                 foreach field $row {
                     set cv($i) $field
