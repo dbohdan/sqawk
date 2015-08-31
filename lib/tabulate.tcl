@@ -1,8 +1,9 @@
 #! /usr/bin/env tclsh
-# Tabulate v0.3.0 -- turn standard input into a table.
+# Tabulate -- turn standard input into a table.
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
+    variable version 0.3.0
     variable defaultStyle {
         top {
             left ┌
