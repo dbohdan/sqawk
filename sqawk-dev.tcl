@@ -9,7 +9,7 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.12.0
+    variable version 0.13.0
 }
 
 interp alias {} ::source+ {} ::source

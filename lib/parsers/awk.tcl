@@ -10,6 +10,7 @@ namespace eval ::sqawk::parsers::awk {
         FS {}
         RS {}
         merge {}
+        trim {}
     }
 }
 
@@ -127,6 +128,16 @@ proc ::sqawk::parsers::awk::splitmerge {str regexp mergeRanges} {
     return $fields
 }
 
+# Trim the contents of the variable "record".
+proc ::sqawk::parsers::awk::trim-record mode {
+    upvar 1 record record
+    set record [switch -exact -- $mode {
+        both { string trim $record }
+        left { string trimleft $record }
+        right { string trimright $record }
+        default { error "unknown more: \"$mode\"" }
+    }]
+}
 
 # Convert raw text data into a list of database rows using regular
 # expressions.
@@ -135,6 +146,7 @@ proc ::sqawk::parsers::awk::parse {data options} {
     set RS [dict get $options RS]
     set FS [dict get $options FS]
     set mergeRanges [dict get $options merge]
+    set trim [dict get $options trim]
 
     # Split the raw data into records.
     set records [::textutil::splitx $data $RS]
@@ -144,9 +156,15 @@ proc ::sqawk::parsers::awk::parse {data options} {
         set records [lrange $records 0 end-1]
     }
 
+
     # Split records into fields.
     set rows {}
-    if {$mergeRanges ne {}} {
+    if {$mergeRanges eq {}} {
+        foreach record $records {
+            ::sqawk::parsers::awk::trim-record $trim
+            lappend rows [list $record {*}[::textutil::splitx $record $FS]]
+        }
+    } else {
         # Allow both the {1-2,3-4,5-6} and the {1 2 3 4 5 6} syntax for the
         # "merge" option.
         set rangeRegexp {[0-9]+-[0-9]+}
@@ -155,12 +173,9 @@ proc ::sqawk::parsers::awk::parse {data options} {
             set mergeRanges [string map {- { } , { }} $mergeRanges]
         }
         foreach record $records {
+            ::sqawk::parsers::awk::trim-record $trim
             lappend rows [list $record {*}[::sqawk::parsers::awk::splitmerge \
                     $record $FS $mergeRanges]]
-        }
-    } else {
-        foreach record $records {
-            lappend rows [list $record {*}[::textutil::splitx $record $FS]]
         }
     }
 

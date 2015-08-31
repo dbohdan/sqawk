@@ -76,7 +76,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
-| `awk` or `raw` | `FS`, `RS` | `RS=\n`, `FS=:` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. |
+| `awk` or `raw` | `FS`, `RS`, `trim` | `RS=\n`, `FS=:`, `trim=left` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`) or both (`trim=both`). |
 | `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
 
 # More examples
@@ -96,6 +96,24 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 ## Shuffle lines
 
     sqawk -1 'select a1 from a order by random()' < file
+
+## Pretty-print a table
+
+    ps | sqawk -output table 'select a1,a2,a3,a4,a5 from a' trim=left
+
+### Sample output
+
+```
+┌─────┬─────┬────────┬───────────────┐
+│ PID │ TTY │  TIME  │      CMD      │
+├─────┼─────┼────────┼───────────────┤
+│11476│pts/3│00:00:00│       ps      │
+├─────┼─────┼────────┼───────────────┤
+│11477│pts/3│00:00:00│tclkit-8.6.3-mk│
+├─────┼─────┼────────┼───────────────┤
+│20583│pts/3│00:00:02│      zsh      │
+└─────┴─────┴────────┴───────────────┘
+```
 
 ## Find duplicate lines
 
