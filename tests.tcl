@@ -297,6 +297,20 @@ namespace eval ::sqawk::tests {
         return $result
     } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
 
+    tcltest::test test17 {trim option} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            set result {}
+            puts $ch {   a  }
+            close $ch
+            lappend result [sqawk-tcl {select a1 from a} $filename]
+            lappend result [sqawk-tcl {select a1 from a} trim=left $filename]
+            lappend result [sqawk-tcl {select a1 from a} trim=both $filename]
+        }
+        return $result
+    } -result {{} a a}
+
     tcltest::test test-nf-1-crop {NF mode crop} \
             -setup $setup \
             -body {

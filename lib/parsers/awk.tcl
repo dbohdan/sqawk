@@ -131,12 +131,13 @@ proc ::sqawk::parsers::awk::splitmerge {str regexp mergeRanges} {
 # Trim the contents of the variable "record".
 proc ::sqawk::parsers::awk::trim-record mode {
     upvar 1 record record
-    set record [switch -exact -- $mode {
-        both { string trim $record }
-        left { string trimleft $record }
-        right { string trimright $record }
-        default { error "unknown more: \"$mode\"" }
-    }]
+    switch -exact -- $mode {
+        both { set record [string trim $record] }
+        left { set record [string trimleft $record] }
+        right { set record [string trimright $record] }
+        {} {}
+        default { error "unknown mode: \"$mode\"" }
+    }
 }
 
 # Convert raw text data into a list of database rows using regular
