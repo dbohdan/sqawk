@@ -9,15 +9,17 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.11.0
+    variable version 0.12.0
 }
 
 interp alias {} ::source+ {} ::source
+source+ lib/tabulate.tcl
 source+ lib/utils.tcl
 source+ lib/parsers/awk.tcl
 source+ lib/parsers/csv.tcl
 source+ lib/serializers/awk.tcl
 source+ lib/serializers/csv.tcl
+source+ lib/serializers/table.tcl
 source+ lib/serializers/tcl.tcl
 source+ lib/classes/table.tcl
 source+ lib/classes/sqawk.tcl

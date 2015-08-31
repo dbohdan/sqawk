@@ -52,7 +52,7 @@ These options affect all files.
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `normal` makes Sqawk produce an error like `table x has no column named x11`. |
-| -output value | `-output awk`, `-output csv` | The output format. Currently can be `awk` (the default), `csv` or `tcl`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
+| -output value | `-output awk` | The output format. Currently can be `awk` (the default), `csv`, `tcl` or `table`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 

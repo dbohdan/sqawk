@@ -273,7 +273,7 @@ namespace eval ::sqawk::tests {
         return $result
     } -result [list "a,b\n1,2" "\"a,b\"\n\"1,2\""]
 
-    tcltest::test test14 {Tcl output} \
+    tcltest::test test15 {Tcl output} \
             -setup $setup \
             -body {
         with-temp-files filename ch {
@@ -284,6 +284,18 @@ namespace eval ::sqawk::tests {
         }
         return $result
     } -result {{1 2 {Hello, World!} { }}}
+
+    tcltest::test test16 {Table output} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "a,b,c\nd,e,f\ng,h,i"
+            close $ch
+            set result [sqawk-tcl \
+                    -FS , -output table {select a1,a2,a3 from a} $filename]
+        }
+        return $result
+    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
 
     tcltest::test test-nf-1-crop {NF mode crop} \
             -setup $setup \
