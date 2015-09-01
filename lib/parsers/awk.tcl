@@ -10,7 +10,7 @@ namespace eval ::sqawk::parsers::awk {
         FS {}
         RS {}
         merge {}
-        trim {}
+        trim none
     }
 }
 
@@ -135,7 +135,7 @@ proc ::sqawk::parsers::awk::trim-record mode {
         both { set record [string trim $record] }
         left { set record [string trimleft $record] }
         right { set record [string trimright $record] }
-        {} {}
+        none {}
         default { error "unknown mode: \"$mode\"" }
     }
 }
