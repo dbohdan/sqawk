@@ -13,7 +13,7 @@ INSTALL_DATA    = $(INSTALL) -m 644
 
 DESTDIR =
 
-default: test
+default: sqawk
 
 install: installdirs
 	$(INSTALL_PROGRAM) sqawk.tcl $(DESTDIR)$(bindir)/sqawk
