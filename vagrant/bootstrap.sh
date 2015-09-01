@@ -6,7 +6,7 @@ is_installed() {
 }
 
 # Install the Tcl packages if needed.
-if ! is_installed tcl || is_installed tcllib || is_installed libsqlite3-tcl
+if ! is_installed tcl || ! is_installed tcllib || ! is_installed libsqlite3-tcl
 then
   apt-get update
   apt-get -y install tclsh tcllib libsqlite3-tcl
@@ -20,8 +20,8 @@ make test
 make install
 
 # Check if Sqawk works and reports its version correctly.
-reported_version=$(sqawk -v)
-source_version=$(awk '/version/{print $3}' /tmp/sqawk/sqawk.tcl | head -n 1)
+reported_version="$(sqawk -v)"
+source_version="$(awk '/version/{print $3}' /tmp/sqawk/sqawk.tcl | head -n 1)"
 
 if test "$reported_version" = "$source_version"
 then
