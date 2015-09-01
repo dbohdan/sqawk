@@ -34,7 +34,7 @@ proc ::assemble::assemble filename {
         if {[regexp {^source\+ (.*)$} $line _ includeFilename]} {
             append output \n[header "$includeFilename" = =]\n
             append output [read-file $includeFilename]\n
-            append output [header "$includeFilename end" = =]\n
+            append output [header "end $includeFilename" = =]\n
         } else {
             append output $line\n
         }
