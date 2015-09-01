@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.3.0
+    variable version 0.3.1
     variable defaultStyle {
         top {
             left ┌
@@ -83,8 +83,9 @@ proc ::tabulate::formatRow {row columnWidths substyle alignment} {
 # Convert a list of lists into a string representing a table in pseudographics.
 proc ::tabulate::tabulate args {
     set data [dict get $args -data]
-    set style [dict-get-default $args $::tabulate::defaultStyle -style]
-    set align [dict-get-default $args center -align]
+    set style [::tabulate::dict-get-default $args \
+            $::tabulate::defaultStyle -style]
+    set align [::tabulate::dict-get-default $args center -align]
 
     # Find out the maximum width of each column.
     set columnWidths {} ;# Dictionary.
@@ -92,8 +93,8 @@ proc ::tabulate::tabulate args {
         for {set i 0} {$i < [llength $row]} {incr i} {
             set field [lindex $row $i]
             set currentLength [string length $field]
-            set width [dict-get-default $columnWidths 0 $i]
-            if {$currentLength > $width} {
+            set width [::tabulate::dict-get-default $columnWidths 0 $i]
+            if {($currentLength > $width) || ($width == 0)} {
                 dict set columnWidths $i $currentLength
             }
         }
@@ -109,22 +110,22 @@ proc ::tabulate::tabulate args {
     set result {}
     set rowCount [llength $data]
     # Top of the table.
-    lappend result [formatRow $emptyRow \
+    lappend result [::tabulate::formatRow $emptyRow \
             $columnWidths [dict get $style top] $align]
     # For each row...
     for {set i 0} {$i < $rowCount} {incr i} {
         set row [lindex $data $i]
         # Row.
-        lappend result [formatRow $row \
+        lappend result [::tabulate::formatRow $row \
                 $columnWidths [dict get $style row] $align]
         # Separator.
         if {$i < $rowCount - 1} {
-            lappend result [formatRow $emptyRow \
+            lappend result [::tabulate::formatRow $emptyRow \
                     $columnWidths [dict get $style separator] $align]
         }
     }
     # Bottom of the table.
-    lappend result [formatRow $emptyRow \
+    lappend result [::tabulate::formatRow $emptyRow \
             $columnWidths [dict get $style bottom] $align]
 
     return [join $result \n]
@@ -136,21 +137,21 @@ proc ::tabulate::main {argv0 argv} {
 
     # Input field separator. If none is given treat each line of input as a Tcl
     # list.
-    set FS [dict-get-default $argv {} -FS]
+    set FS [::tabulate::dict-get-default $argv {} -FS]
     if {$FS ne {}} {
         set updateData {}
         foreach line $data {
             lappend updateData [split $line $FS]
         }
         set data $updateData
+        dict unset argv FS
     }
-    dict unset argv FS
 
     puts [tabulate -data $data {*}$argv]
 }
 
 # If this is the main script...
 if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0]) &&
-        ![string match sqawk*.tcl $argv0]} {
+        ![string match sqawk* [file tail $argv0]]} {
     ::tabulate::main $argv0 $argv
 }
