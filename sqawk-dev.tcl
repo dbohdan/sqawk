@@ -9,9 +9,12 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.14.0
+    variable version 0.14.1
 }
 
+# The following comment is used by Assemble when bundling Sqawk's source code in
+# a single file. Do not remove it.
+#define SQAWK
 interp alias {} ::source+ {} ::source
 source+ lib/tabulate.tcl
 source+ lib/utils.tcl

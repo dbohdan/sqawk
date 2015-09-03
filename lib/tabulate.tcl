@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.3.1
+    variable version 0.4.0
     variable defaultStyle {
         top {
             left ┌
@@ -150,8 +150,9 @@ proc ::tabulate::main {argv0 argv} {
     puts [tabulate -data $data {*}$argv]
 }
 
+#ifndef SQAWK
 # If this is the main script...
-if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0]) &&
-        ![string match sqawk* [file tail $argv0]]} {
+if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0])} {
     ::tabulate::main $argv0 $argv
 }
+#endif

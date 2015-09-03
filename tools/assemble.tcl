@@ -29,7 +29,7 @@ proc ::assemble::header {text {charLeft { }} {charRight { }} {lineWidth 80}} {
     return $result
 }
 
-# A tiny C-style preprocessor for Tcl code.
+# A run a C-style preprocessor on $text.
 proc ::assemble::preprocess {text {definitions {ASSEMBLE 1}}} {
     set conditionStack {}
     set result {}
