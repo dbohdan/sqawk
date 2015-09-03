@@ -33,7 +33,8 @@ proc ::assemble::header {text {charLeft { }} {charRight { }} {lineWidth 80}} {
 proc ::assemble::preprocess {text {definitions {ASSEMBLE 1}}} {
     set conditionStack {}
     set result {}
-    set skip [list 0] ;# This is a stack.
+    # A stack for the skip conditions. It grows with each #ifdef/#ifndef.
+    set skip [list 0]
 
     foreach line [split $text \n] {
         lassign [split $line] command arg1 arg2
@@ -60,7 +61,7 @@ proc ::assemble::preprocess {text {definitions {ASSEMBLE 1}}} {
                 set skip [lrange $skip 0 end-1]
             }
             default {
-                # Skip the line if one or more conditions are unmet.
+                # Skip the line if at least one skip condition is met.
                 if {{1} ni $skip} {
                     lappend result $line
                 }
