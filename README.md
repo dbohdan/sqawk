@@ -52,21 +52,21 @@ These options affect all files.
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `normal` makes Sqawk produce an error like `table x has no column named x11`. |
-| -output value | `-output awk` | The output format. See [output formats](#output-formats). |
+| -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
 
 #### Output formats
 
-The following are the possible values for the command line option `-output`. The format options follow the format name after a command and are separated from each other by commas, e.g., `-output json,arrays=0,indent=1`.
+The following are the possible values for the command line option `-output`. The format options can follow the format name after a comma and are separated with commas, e.g., `-output json,arrays=0,indent=1`.
 
 | Format name | Format options | Examples | Comment |
 |-------------|----------------|----------|---------|
 | awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | csv | none | `-output csv` | Output CSV. |
-| json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` the data is output as an array of JSON objects with the column names as keys; if `arrays` is `1` it is output as an array of arrays. The values are represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
-| tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`.  |
-| table | none | `-output table` | The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
+| json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
+| tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
+| table | none | `-output table` | Output plain text tables. The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
 
 ### Per-file options
 
@@ -74,7 +74,7 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| format | `format=csv csvsep=;` | Set the input format for the next source of input. See [input formats](#input-formats). |
+| format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
