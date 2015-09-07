@@ -71,7 +71,7 @@ proc ::assemble::preprocess {text {definitions {ASSEMBLE 1}}} {
     return [join $result \n]
 }
 
-# Replace all instances of the command "source+ <filename>" with the contents of
+# Replace all instances of the command [source+ filename] with the contents of
 # the file $filename.
 proc ::assemble::include-sources text {
     set result {}
@@ -89,7 +89,7 @@ proc ::assemble::include-sources text {
 
 proc ::assemble::assemble filename {
     set main [read-file $filename]
-    set output [::assemble::preprocess [::assemble::include-sources $main] ]
+    set output [preprocess [include-sources $main] ]
     puts $output
 }
 

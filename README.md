@@ -52,9 +52,21 @@ These options affect all files.
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `normal` makes Sqawk produce an error like `table x has no column named x11`. |
-| -output value | `-output awk` | The output format. Currently can be `awk` (the default), `csv`, `tcl` or `table`. The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows. |
+| -output value | `-output awk` | The output format. See [output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
+
+#### Output formats
+
+The following are the possible values for the command line option `-output`. The format options follow the format name after a command and are separated from each other by commas, e.g., `-output json,arrays=0,indent=1`.
+
+| Format name | Format options | Examples | Comment |
+|-------------|----------------|----------|---------|
+| awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
+| csv | none | `-output csv` | Output CSV. |
+| json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` the data is output as an array of JSON objects with the column names as keys; if `arrays` is `1` it is output as an array of arrays. The values are represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
+| tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`.  |
+| table | none | `-output table` | The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
 
 ### Per-file options
 
@@ -62,15 +74,15 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| format | `format=csv csvsep=;` | Set the input format for the next source of input. See [input format options](#input-format-options). |
+| format | `format=csv csvsep=;` | Set the input format for the next source of input. See [input formats](#input-formats). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
-| merge | `merge=1-2,3-5`, `merge=1 2 3 5` | Merge fields with the given numbers back into one preserving the separators between them. |
+| merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers back into one preserving the separators between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
 | MNF | `MNF=crop` | Same as -MNF but for one file (table). |
 
-### Input format options
+#### Input formats
 
 A format option (`format=x`) selects the input parser with which Sqawk will parse the next input source. Formats can have multiple synonymous names or multiple names that produce slightly different effects. Selecting an input format can enable additional per-file options that only work with that format.
 
@@ -97,7 +109,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
     sqawk -1 'select a1 from a order by random()' < file
 
-## Pretty-print a table
+## Pretty-print data as a table
 
     ps | sqawk -output table 'select a1,a2,a3,a4 from a' trim=left
 
@@ -113,6 +125,31 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 ├─────┼─────┼────────┼───────────────┤
 │20583│pts/3│00:00:02│      zsh      │
 └─────┴─────┴────────┴───────────────┘
+```
+
+## Convert input to JSON objects
+
+    ps | sqawk -output json,indent=1 'select PID,TTY,TIME,CMD from a' trim=left header=1
+
+### Sample output
+
+```
+[{
+    "PID"  : "3947",
+    "TTY"  : "pts/2",
+    "TIME" : "00:00:07",
+    "CMD"  : "zsh"
+},{
+    "PID"  : "15951",
+    "TTY"  : "pts/2",
+    "TIME" : "00:00:00",
+    "CMD"  : "ps"
+},{
+    "PID"  : "15952",
+    "TTY"  : "pts/2",
+    "TIME" : "00:00:00",
+    "CMD"  : "tclkit-8.6.3-mk"
+}]
 ```
 
 ## Find duplicate lines

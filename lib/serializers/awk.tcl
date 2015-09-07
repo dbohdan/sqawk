@@ -7,20 +7,20 @@ namespace eval ::sqawk::serializers::awk {
         raw awk
     }
     variable options {
-        -ofs {}
-        -ors {}
+        ofs {}
+        ors {}
     }
 }
 
 # Convert records to text.
 proc ::sqawk::serializers::awk::serialize {outputRecs options} {
     # Parse $args.
-    set OFS [dict get $options -ofs]
-    set ORS [dict get $options -ors]
+    set OFS [dict get $options ofs]
+    set ORS [dict get $options ors]
 
     set text {}
     foreach record $outputRecs {
-        append text [join $record $OFS]$ORS
+        append text [join [dict values $record] $OFS]$ORS
     }
     return $text
 }

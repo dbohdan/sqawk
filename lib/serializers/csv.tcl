@@ -15,7 +15,7 @@ proc ::sqawk::serializers::csv::serialize {outputRecs options} {
 
     set text {}
     foreach record $outputRecs {
-        append text [::csv::join $record]\n
+        append text [::csv::join [dict values $record]]\n
     }
     return $text
 }

@@ -279,11 +279,19 @@ namespace eval ::sqawk::tests {
         with-temp-files filename ch {
             puts $ch "1\t2\tHello, World!\t "
             close $ch
-            set result [sqawk-tcl \
-                    -FS \t -output tcl {select a1,a2,a3,a4 from a} $filename]
+            set result {}
+            lappend result [sqawk-tcl \
+                    -FS \t \
+                    -output tcl \
+                    {select a1,a2,a3,a4 from a} $filename]
+            lappend result [sqawk-tcl \
+                    -FS \t \
+                    -output tcl,dicts=1 \
+                    {select a1,a2,a3,a4 from a} $filename]
         }
         return $result
-    } -result {{1 2 {Hello, World!} { }}}
+    } -result [list {{1 2 {Hello, World!} { }}} \
+            {{a1 1 a2 2 a3 {Hello, World!} a4 { }}}]
 
     tcltest::test test16 {Table output} \
             -setup $setup \
@@ -311,6 +319,30 @@ namespace eval ::sqawk::tests {
         return $result
     } -result {{} a a}
 
+    tcltest::test test18 {JSON output} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "a,b,c\nd,e,f\ng,h,i"
+            close $ch
+            set result {}
+            lappend result [sqawk-tcl \
+                    -FS , \
+                    -output json \
+                    {select a1,a2,a3 from a} $filename]
+            lappend result [sqawk-tcl \
+                    -FS , \
+                    -output json,arrays=1 \
+                    {select a1,a2,a3 from a} $filename]
+        }
+        return $result
+    } -result [list \
+            [format {[%s,%s,%s]} \
+                    {{"a1":"a","a2":"b","a3":"c"}} \
+                    {{"a1":"d","a2":"e","a3":"f"}} \
+                    {{"a1":"g","a2":"h","a3":"i"}}] \
+            {[["a","b","c"],["d","e","f"],["g","h","i"]]}]
+
     tcltest::test test-nf-1-crop {NF mode crop} \
             -setup $setup \
             -body {
@@ -322,7 +354,11 @@ namespace eval ::sqawk::tests {
             close $ch
             foreach nf {0 1 2 3} {
                 lappend result [sqawk-tcl \
-                    -FS " " -NF $nf -MNF crop -output tcl {select * from a} $filename]
+                    -FS " " \
+                    -NF $nf \
+                    -MNF crop \
+                    -output tcl \
+                    {select * from a} $filename]
             }
         }
         return [join $result \n]
@@ -344,7 +380,11 @@ namespace eval ::sqawk::tests {
             close $ch
             foreach nf {2 3 4} {
                 lappend result [sqawk-tcl \
-                    -FS " " -NF $nf -MNF crop -output tcl {select * from a} $filename]
+                    -FS " " \
+                    -NF $nf \
+                    -MNF crop \
+                    -output tcl \
+                    {select * from a} $filename]
             }
         }
         return [join $result \n]
@@ -365,7 +405,11 @@ namespace eval ::sqawk::tests {
             close $ch
             foreach nf {0 1 2 3} {
                 lappend result [sqawk-tcl \
-                    -FS " " -NF $nf -MNF expand -output tcl {select * from a} $filename]
+                    -FS " " \
+                    -NF $nf \
+                    -MNF expand \
+                    -output tcl \
+                    {select * from a} $filename]
             }
         }
         return [join $result \n]
@@ -384,7 +428,11 @@ namespace eval ::sqawk::tests {
             puts $ch "A B C"
             close $ch
             sqawk-tcl \
-                -FS " " -NF 2 -MNF normal -output tcl {select * from a} $filename
+                -FS " " \
+                -NF 2 \
+                -MNF normal \
+                -output tcl \
+                {select * from a} $filename
         }} msg]
     } -result 1
 

@@ -72,15 +72,52 @@ namespace eval ::sqawk {}
 
     # Serialize a list of rows into text in the format $format.
     method Serialize {format data sqawkOptions} {
+        # Parse $format.
+        set splitFormat [split $format ,]
+        set formatName [lindex $splitFormat 0]
+        set formatOptions {}
+        foreach option [lrange $splitFormat 1 end] {
+            lassign [split $option =] key value
+            lappend formatOptions $key $value
+        }
         set error [catch {
-            set ns [dict get $formatToSerializer $format]
+            set ns [dict get $formatToSerializer $formatName]
         }]
         if {$error} {
-            error "unknown output format: \"$format\""
+            error "unknown output format: \"$formatName\""
         }
-        set serializeOptions [set ${ns}::options]
-        return [${ns}::serialize $data \
-                [::sqawk::override-keys $serializeOptions $sqawkOptions]]
+
+        # Get the dict containing the options the serializer accepts with their
+        # default values.
+        set so [set ${ns}::options]
+        # Set the two main options for the "awk" serializer. "awk" is a special
+        # case: its options are set based on separate command line arguments
+        # whose values are passed to us in $sqawkOptions.
+        if {$formatName eq {awk}} {
+            if {[dict exists $formatOptions ofs]} {
+                error {to set the field separator for the "awk" output format\
+                        please use the command line option "-OFS" instead of\
+                        the format option "ofs"}
+            }
+            if {[dict exists $formatOptions ors]} {
+                error {to set the record separator for the "awk" output format\
+                        please use the command line option "-OFS" instead of\
+                        the format option "ofs"}
+            }
+            dict set so ofs [dict get $sqawkOptions -ofs]
+            dict set so ors [dict get $sqawkOptions -ors]
+        }
+        # Check if all the serializer options we have been given in $format are
+        # valid. Replace the default values with the actual values.
+        foreach {key value} $formatOptions {
+            if {[dict exists $so $key]} {
+                dict set so $key $value
+            } else {
+                error "unknown option for output format\
+                        \"$formatName\":\ \"$key\""
+            }
+        }
+        return [${ns}::serialize $data $so]
     }
 
     # Read data from a file or a channel into a new database table. The filename
@@ -144,7 +181,7 @@ namespace eval ::sqawk {}
             set outputRecord {}
             set keys $results(*)
             foreach key $keys {
-                lappend outputRecord $results($key)
+                lappend outputRecord $key $results($key)
             }
             lappend outputRecords $outputRecord
         }
