@@ -65,8 +65,8 @@ The following are the possible values for the command line option `-output`. The
 | awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | csv | none | `-output csv` | Output CSV. |
 | json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
-| tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 | table | none | `-output table` | Output plain text tables. The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
+| tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 
 ### Per-file options
 
@@ -74,6 +74,7 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
+| datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns starting with `a1` if your table is named `a`. The datatype for each field for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
 | format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers back into one preserving the separators between them. |

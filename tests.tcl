@@ -343,6 +343,34 @@ namespace eval ::sqawk::tests {
                     {{"a1":"g","a2":"h","a3":"i"}}] \
             {[["a","b","c"],["d","e","f"],["g","h","i"]]}]
 
+
+    tcltest::test test19 {Datatypes} \
+            -setup $setup \
+            -body {
+        with-temp-files filename ch {
+            puts $ch "001 a\n002 b\nc"
+            close $ch
+            set result {}
+            lappend result [sqawk-tcl \
+                    {select a1,a2 from a} $filename]
+            lappend result [sqawk-tcl \
+                    {select printf("%03d",a1),a2 from a} $filename]
+            lappend result [sqawk-tcl \
+                    {select a1,a2 from a} datatypes=real,text $filename]
+            lappend result [sqawk-tcl \
+                    {select a1,a2 from a} datatypes=null,blob $filename]
+            lappend result [sqawk-tcl \
+                    {select a1,a2 from a} datatypes=text,text $filename]
+        }
+        return $result
+    } -result [list \
+            "1 a\n2 b\nc " \
+            "001 a\n002 b\n000 " \
+            "1.0 a\n2.0 b\nc " \
+            "001 a\n002 b\nc " \
+            "001 a\n002 b\nc "]
+
+
     tcltest::test test-nf-1-crop {NF mode crop} \
             -setup $setup \
             -body {

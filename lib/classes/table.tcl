@@ -12,19 +12,33 @@ namespace eval ::sqawk {}
     option -maxnf
     option -modenf {}
     option -header {}
+    option -datatypes {}
 
     destructor {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
     }
 
-    # Return column name for column number $i, custom (if present) or
+    # Return the column name for column number $i, custom (if present) or
     # automatically generated.
     method column-name i {
         set customColName [lindex [$self cget -header] $i-1]
         if {($i > 0) && ($customColName ne "")} {
-            set colName $customColName
+            return $customColName
         } else {
-            set colName [$self cget -columnprefix]$i
+            return [$self cget -columnprefix]$i
+        }
+    }
+
+    # Return the column datatype for column number $i, custom (if present) or
+    # "INTEGER" otherwise.
+    method column-datatype i {
+        set customColDatatype [lindex [$self cget -datatypes] $i-1]
+        if {$i == 0} {
+            return TEXT
+        } elseif {$customColDatatype ne ""} {
+            return $customColDatatype
+        } else {
+            return INTEGER
         }
     }
 
@@ -41,7 +55,7 @@ namespace eval ::sqawk {}
         }
         set maxNF [$self cget -maxnf]
         for {set i 0} {$i <= $maxNF} {incr i} {
-            lappend fields "[$self column-name $i] INTEGER"
+            lappend fields "[$self column-name $i] [$self column-datatype $i]"
         }
         [$self cget -database] eval [subst $command]
     }
@@ -85,7 +99,8 @@ namespace eval ::sqawk {}
                     if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
                         for {set i $maxNF; incr i} {$i < $nf} {incr i} {
                             $db eval "ALTER TABLE $tableName ADD COLUMN
-                                    [$self column-name $i] INTEGER"
+                                    [$self column-name $i]
+                                    [$self column-datatype $i]"
                         }
                         $self configure -maxnf [set maxNF [incr i -1]]
                     }

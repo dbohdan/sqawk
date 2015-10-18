@@ -128,12 +128,12 @@ namespace eval ::sqawk {}
         set defaultTableName [lindex $defaultTableNames [dict size $tables]]
         ::sqawk::dict-ensure-default fileOptions table $defaultTableName
         # Set the default column name prefix equal to the table name.
+        ::sqawk::dict-ensure-default fileOptions csvquote \"
+        ::sqawk::dict-ensure-default fileOptions csvsep ,
+        ::sqawk::dict-ensure-default fileOptions format raw
+        ::sqawk::dict-ensure-default fileOptions merge {}
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]
-        ::sqawk::dict-ensure-default fileOptions merge {}
-        ::sqawk::dict-ensure-default fileOptions format raw
-        ::sqawk::dict-ensure-default fileOptions csvsep ,
-        ::sqawk::dict-ensure-default fileOptions csvquote \"
 
         array set metadata $fileOptions
 
@@ -159,6 +159,9 @@ namespace eval ::sqawk {}
                 -columnprefix $metadata(prefix) \
                 -maxnf $metadata(NF) \
                 -modenf $metadata(MNF)
+        if {[info exists metadata(datatypes)]} {
+            $newTable configure -datatypes [split $metadata(datatypes) ,]
+        }
         if {[info exists metadata(header)] && $metadata(header)} {
             # Remove the first field (a0/b0/...) from the header.
             set header [lrange [lindex [::sqawk::lshift! rows] 0] 1 end]
