@@ -4,7 +4,6 @@
 # License: MIT
 
 package require fileutil
-package require struct
 package require tcltest
 
 namespace eval ::sqawk::tests {
@@ -65,7 +64,7 @@ namespace eval ::sqawk::tests {
     }
 
     # Set the constraints.
-    set sqliteVersion [sqawk-tcl {select sqlite_version()} /dev/null]
+    set sqliteVersion [sqawk-tcl {select sqlite_version()} << {}]
     tcltest::testConstraint printfInSqlite3 \
             [newer-or-equal $sqliteVersion 3.8.3]
 
