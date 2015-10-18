@@ -3,8 +3,9 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 
-package require tcltest
 package require fileutil
+package require struct
+package require tcltest
 
 namespace eval ::sqawk::tests {
     variable path [file dirname [file dirname [file normalize $argv0/___]]]
@@ -42,9 +43,31 @@ namespace eval ::sqawk::tests {
         return {*}$retopt $ret
     }
 
+    # Run Sqawk with {*}$args.
     proc sqawk-tcl args {
         exec [info nameofexecutable] sqawk.tcl {*}$args
     }
+
+    # Compare the elements of two lists with the operator $op.
+    proc lcompare {list1 list2 op} {
+        foreach a $list1 b $list2 {
+            if {![expr [list $a $op $b]]} {
+                return 0
+            }
+        }
+        return 1
+    }
+
+    # Return 1 if $version in the format of X.Y.Z.W is newer than $reference and
+    # 0 otherwise.
+    proc newer-or-equal {version reference} {
+        return [lcompare [split $version .] [split $reference .] >=]
+    }
+
+    # Set the constraints.
+    set sqliteVersion [sqawk-tcl {select sqlite_version()} /dev/null]
+    tcltest::testConstraint printfInSqlite3 \
+            [newer-or-equal $sqliteVersion 3.8.3]
 
     tcltest::test test1 {Handle broken pipe, read from stdin} \
             -constraints unix \
@@ -345,6 +368,7 @@ namespace eval ::sqawk::tests {
 
 
     tcltest::test test19 {Datatypes} \
+            -constraints printfInSqlite3 \
             -setup $setup \
             -body {
         with-temp-files filename ch {
