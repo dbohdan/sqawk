@@ -65,7 +65,7 @@ The following are the possible values for the command line option `-output`. The
 | awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | csv | none | `-output csv` | Output CSV. |
 | json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
-| table | none | `-output table` | Output plain text tables. The `table` serializer uses [Tabulate](http://wiki.tcl.tk/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
+| table | none | `-output table` | Output plain text tables. The `table` serializer uses [Tabulate](http://tcl.wiki/41682) to format the output as a table using box-drawing characters. Note that the table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. |
 | tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 
 ### Per-file options
@@ -90,7 +90,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
 | `awk` or `raw` | `FS`, `RS`, `trim` | `RS=\n`, `FS=:`, `trim=left` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or none (`trim=none`). |
-| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl.tk/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
+| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl-lang.org/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
 
 # More examples
 
