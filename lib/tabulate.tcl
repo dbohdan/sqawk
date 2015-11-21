@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.4.0
+    variable version 0.5.0
     variable defaultStyle {
         top {
             left ┌
@@ -32,6 +32,50 @@ namespace eval ::tabulate {
     }
 }
 
+namespace eval ::tabulate::options {}
+
+# Simulate keyword arguments in procedures that accept "args".
+# Usage: store <key in the caller's $args> in <name of a variable in the
+# caller's scope> ?default <default value>?
+proc ::tabulate::options::store {name {__in__ {}} varName
+        {__default__ {}} {default {}}} {
+    if {$__in__ ne {in}} {
+        error "incorrect keyword: \"$__in__\" instead of \"in\""
+    }
+    set useDefaultValue 0
+    if {$__default__ ne {}} {
+        if {$__default__ ne {default}} {
+            error "incorrect keyword: \"$__default__\" instead of \"default\""
+        }
+        set useDefaultValue 1
+    }
+    upvar 1 args arguments
+    upvar 1 $varName var
+    if {[dict exists $arguments $name]} {
+        set var [dict get $arguments $name]
+    } else {
+        if {$useDefaultValue} {
+            set var $default
+        } else {
+            error "no argument \"$name\" given"
+        }
+    }
+    dict unset arguments $name
+}
+
+# Check that the caller's $args is empty.
+proc ::tabulate::options::got-all {} {
+    upvar 1 args arguments
+    set keys [dict keys $arguments]
+    if {[llength $keys] > 0} {
+        set keysQuoted {}
+        foreach key $keys {
+            lappend keysQuoted "\"$key\""
+        }
+        error "unknown option(s): [join $keysQuoted {, }]"
+    }
+}
+
 # Return a value from dictionary like [dict get] would if it is there.
 # Otherwise return the default value.
 proc ::tabulate::dict-get-default {dictionary default args} {
@@ -43,30 +87,42 @@ proc ::tabulate::dict-get-default {dictionary default args} {
 }
 
 # Format a list as a table row. Does *not* append a newline after the row.
-proc ::tabulate::formatRow {row columnWidths substyle alignment} {
+# $columnAlignments is a list that contains one alignment ("left", "right" or
+# "center") for each column. If there are more columns than alignments in
+# $columnAlignments "center" is assumed for those columns.
+proc ::tabulate::formatRow args {
+    options::store -substyle in substyle
+    options::store -row in row
+    options::store -widths in columnWidths
+    options::store -alignments in columnAlignments default {}
+    options::store -margins in margins default 0
+    options::got-all
+
     set result {}
     append result [dict get $substyle left]
     set fieldCount [expr { [llength $columnWidths] / 2 }]
     for {set i 0} {$i < $fieldCount} {incr i} {
         set field [lindex $row $i]
         set padding [expr {
-            [dict get $columnWidths $i] - [string length $field]
+            [dict get $columnWidths $i] - [string length $field] + 2 * $margins
         }]
+        set alignment [lindex $columnAlignments $i]
         switch -exact -- $alignment {
+            {} -
             center {
                 set rightPadding [expr { $padding / 2 }]
                 set leftPadding [expr { $padding - $rightPadding }]
             }
             left {
-                set rightPadding $padding
-                set leftPadding 0
+                set rightPadding [expr { $padding - $margins }]
+                set leftPadding $margins
             }
             right {
-                set rightPadding 0
-                set leftPadding $padding
+                set rightPadding $margins
+                set leftPadding [expr { $padding - $margins }]
             }
             default {
-                error "unknown row alignment: \"$alignment\""
+                error "unknown alignment: \"$alignment\""
             }
         }
         append result [string repeat [dict get $substyle padding] $leftPadding]
@@ -82,10 +138,11 @@ proc ::tabulate::formatRow {row columnWidths substyle alignment} {
 
 # Convert a list of lists into a string representing a table in pseudographics.
 proc ::tabulate::tabulate args {
-    set data [dict get $args -data]
-    set style [::tabulate::dict-get-default $args \
-            $::tabulate::defaultStyle -style]
-    set align [::tabulate::dict-get-default $args center -align]
+    options::store -data in data
+    options::store -style in style default $::tabulate::defaultStyle
+    options::store -alignments in align default {}
+    options::store -margins in margins default 0
+    options::got-all
 
     # Find out the maximum width of each column.
     set columnWidths {} ;# Dictionary.
@@ -110,23 +167,39 @@ proc ::tabulate::tabulate args {
     set result {}
     set rowCount [llength $data]
     # Top of the table.
-    lappend result [::tabulate::formatRow $emptyRow \
-            $columnWidths [dict get $style top] $align]
+    lappend result [::tabulate::formatRow \
+            -substyle [dict get $style top] \
+            -row $emptyRow \
+            -widths $columnWidths \
+            -alignments $align \
+            -margins $margins]
     # For each row...
     for {set i 0} {$i < $rowCount} {incr i} {
         set row [lindex $data $i]
         # Row.
-        lappend result [::tabulate::formatRow $row \
-                $columnWidths [dict get $style row] $align]
+        lappend result [::tabulate::formatRow \
+                -substyle [dict get $style row] \
+                -row $row \
+                -widths $columnWidths \
+                -alignments $align \
+                -margins $margins]
         # Separator.
         if {$i < $rowCount - 1} {
-            lappend result [::tabulate::formatRow $emptyRow \
-                    $columnWidths [dict get $style separator] $align]
+            lappend result [::tabulate::formatRow \
+                    -substyle [dict get $style separator] \
+                    -row $emptyRow \
+                    -widths $columnWidths \
+                    -alignments $align \
+                    -margins $margins]
         }
     }
     # Bottom of the table.
-    lappend result [::tabulate::formatRow $emptyRow \
-            $columnWidths [dict get $style bottom] $align]
+    lappend result [::tabulate::formatRow \
+            -substyle [dict get $style bottom] \
+            -row $emptyRow \
+            -widths $columnWidths \
+            -alignments $align \
+            -margins $margins]
 
     return [join $result \n]
 }
