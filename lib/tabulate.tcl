@@ -3,8 +3,10 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.6.0
-    variable defaultStyle {
+    variable version 0.7.0
+}
+namespace eval ::tabulate::style {
+    variable default {
         top {
             left ┌
             padding ─
@@ -139,7 +141,7 @@ proc ::tabulate::formatRow args {
 # Convert a list of lists into a string representing a table in pseudographics.
 proc ::tabulate::tabulate args {
     options::store -data in data
-    options::store -style in style default $::tabulate::defaultStyle
+    options::store -style in style default $::tabulate::style::default
     options::store -alignments in align default {}
     options::store -margins in margins default 0
     options::got-all
