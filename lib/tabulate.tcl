@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.7.0
+    variable version 0.8.0
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -30,6 +30,32 @@ namespace eval ::tabulate::style {
             padding ─
             separator ┴
             right ┘
+        }
+    }
+    variable loFi {
+        top {
+            left +
+            padding -
+            separator +
+            right +
+        }
+        separator {
+            left +
+            padding -
+            separator +
+            right +
+        }
+        row {
+            left |
+            padding { }
+            separator |
+            right |
+        }
+        bottom {
+            left +
+            padding -
+            separator +
+            right +
         }
     }
 }
