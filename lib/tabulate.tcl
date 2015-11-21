@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.5.0
+    variable version 0.6.0
     variable defaultStyle {
         top {
             left ┌
