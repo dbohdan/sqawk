@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.8.0
+    variable version 0.9.0
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -245,10 +245,22 @@ proc ::tabulate::main {argv0 argv} {
             lappend updateData [split $line $FS]
         }
         set data $updateData
-        dict unset argv FS
+        dict unset argv -FS
+    }
+    # Process style names rather than style *values*.
+    set styleName [::tabulate::dict-get-default $argv default -style]
+    dict unset argv -style
+    if {[info exists ::tabulate::style::$styleName]} {
+        set style [set ::tabulate::style::$styleName]
+    } else {
+        puts "Unknown style name: \"$styleName\"; can use"
+        foreach varName [info vars ::tabulate::style::*] {
+            puts "   - \"[namespace tail $varName]\""
+        }
+        exit 1
     }
 
-    puts [tabulate -data $data {*}$argv]
+    puts [tabulate -data $data -style $style {*}$argv]
 }
 
 #ifndef SQAWK
