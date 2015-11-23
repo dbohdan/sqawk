@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.9.1
+    variable version 0.9.2
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -62,25 +62,13 @@ namespace eval ::tabulate::style {
 
 namespace eval ::tabulate::options {}
 
-# Go to the next token in the proc parse-dsl.
-proc ::tabulate::options::next {} {
-    upvar 1 i i
-    incr i
-}
-
-# Return the current token in the proc parse-dsl.
-proc ::tabulate::options::current {} {
-    upvar 1 i i
-    upvar 1 tokens tokens
-    return [lindex $tokens $i]
-}
-
-# Throw an error unless the current token equals $expected.
-proc ::tabulate::options::expect expected {
-    set current [uplevel 1 current]
-    if {$current ne $expected} {
-        error "expected \"$expected\" but got \"$current\""
-    }
+# Simulate named arguments in procedures that accept "args".
+# Usage: process store <key in the caller's $tokens> in <name of a variable in
+# the caller's scope> ?default <default value>? ?store ...?
+proc ::tabulate::options::process args {
+    set opts [lindex $args 0]
+    set parsed [parse-dsl [lrange $args 1 end]]
+    uplevel 1 [list ::tabulate::options::process-parsed $opts $parsed]
 }
 
 # Convert the human-readable options DSL (see the proc parse below for its
@@ -123,13 +111,31 @@ proc ::tabulate::options::parse-dsl tokens {
     return $result
 }
 
-# Simulate named arguments in procedures that accept "args".
-# Usage: process store <key in the caller's $tokens> in <name of a variable in
-# the caller's scope> ?default <default value>? ?store ...?
-proc ::tabulate::options::process args {
-    set opts [lindex $args 0]
+# Go to the next token in the proc parse-dsl.
+proc ::tabulate::options::next {} {
+    upvar 1 i i
+    incr i
+}
 
-    set declaredOptions [parse-dsl [lrange $args 1 end]]
+# Return the current token in the proc parse-dsl.
+proc ::tabulate::options::current {} {
+    upvar 1 i i
+    upvar 1 tokens tokens
+    return [lindex $tokens $i]
+}
+
+# Throw an error unless the current token equals $expected.
+proc ::tabulate::options::expect expected {
+    set current [uplevel 1 current]
+    if {$current ne $expected} {
+        error "expected \"$expected\" but got \"$current\""
+    }
+}
+
+# Process the options in $opts and set the corresponding variables in the
+# caller's scope. $declaredOptions is a list of dicts as returns by the proc
+# parse-dsl.
+proc ::tabulate::options::process-parsed {opts declaredOptions} {
     set names {}
 
     foreach item $declaredOptions {
@@ -177,56 +183,6 @@ proc ::tabulate::dict-get-default {dictionary default args} {
     } else {
         return $default
     }
-}
-
-# Format a list as a table row. Does *not* append a newline after the row.
-# $columnAlignments is a list that contains one alignment ("left", "right" or
-# "center") for each column. If there are more columns than alignments in
-# $columnAlignments "center" is assumed for those columns.
-proc ::tabulate::formatRow args {
-    options::process $args \
-        store -substyle in substyle \
-        store -row in row \
-        store -widths in columnWidths \
-        store -alignments in columnAlignments default {} \
-        store -margins in margins default 0
-
-    set result {}
-    append result [dict get $substyle left]
-    set fieldCount [expr { [llength $columnWidths] / 2 }]
-    for {set i 0} {$i < $fieldCount} {incr i} {
-        set field [lindex $row $i]
-        set padding [expr {
-            [dict get $columnWidths $i] - [string length $field] + 2 * $margins
-        }]
-        set alignment [lindex $columnAlignments $i]
-        switch -exact -- $alignment {
-            {} -
-            center {
-                set rightPadding [expr { $padding / 2 }]
-                set leftPadding [expr { $padding - $rightPadding }]
-            }
-            left {
-                set rightPadding [expr { $padding - $margins }]
-                set leftPadding $margins
-            }
-            right {
-                set rightPadding $margins
-                set leftPadding [expr { $padding - $margins }]
-            }
-            default {
-                error "unknown alignment: \"$alignment\""
-            }
-        }
-        append result [string repeat [dict get $substyle padding] $leftPadding]
-        append result $field
-        append result [string repeat [dict get $substyle padding] $rightPadding]
-        if {$i < $fieldCount - 1} {
-            append result [dict get $substyle separator]
-        }
-    }
-    append result [dict get $substyle right]
-    return $result
 }
 
 # Convert a list of lists into a string representing a table in pseudographics.
@@ -295,6 +251,56 @@ proc ::tabulate::tabulate args {
             -margins $margins]
 
     return [join $result \n]
+}
+
+# Format a list as a table row. Does *not* append a newline after the row.
+# $columnAlignments is a list that contains one alignment ("left", "right" or
+# "center") for each column. If there are more columns than alignments in
+# $columnAlignments "center" is assumed for those columns.
+proc ::tabulate::formatRow args {
+    options::process $args \
+        store -substyle in substyle \
+        store -row in row \
+        store -widths in columnWidths \
+        store -alignments in columnAlignments default {} \
+        store -margins in margins default 0
+
+    set result {}
+    append result [dict get $substyle left]
+    set fieldCount [expr { [llength $columnWidths] / 2 }]
+    for {set i 0} {$i < $fieldCount} {incr i} {
+        set field [lindex $row $i]
+        set padding [expr {
+            [dict get $columnWidths $i] - [string length $field] + 2 * $margins
+        }]
+        set alignment [lindex $columnAlignments $i]
+        switch -exact -- $alignment {
+            {} -
+            center {
+                set rightPadding [expr { $padding / 2 }]
+                set leftPadding [expr { $padding - $rightPadding }]
+            }
+            left {
+                set rightPadding [expr { $padding - $margins }]
+                set leftPadding $margins
+            }
+            right {
+                set rightPadding $margins
+                set leftPadding [expr { $padding - $margins }]
+            }
+            default {
+                error "unknown alignment: \"$alignment\""
+            }
+        }
+        append result [string repeat [dict get $substyle padding] $leftPadding]
+        append result $field
+        append result [string repeat [dict get $substyle padding] $rightPadding]
+        if {$i < $fieldCount - 1} {
+            append result [dict get $substyle separator]
+        }
+    }
+    append result [dict get $substyle right]
+    return $result
 }
 
 # Read the input, process the command line options and output the result.
