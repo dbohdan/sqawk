@@ -487,6 +487,73 @@ namespace eval ::sqawk::tests {
         }} msg]
     } -result 1
 
+    proc tabulate-tcl args {
+        exec [info nameofexecutable] lib/tabulate.tcl {*}$args
+    }
+
+    tcltest::test tabulate-1 {Tabulate as application} \
+            -setup $setup \
+            -body {
+        set result {}
+        lappend result [tabulate-tcl << "a b c\nd e f\n"]
+        lappend result [tabulate-tcl -FS , << "a,b,c\nd,e,f\n"]
+        lappend result [tabulate-tcl -margins 1 << "a b c\nd e f\n"]
+        lappend result [tabulate-tcl -alignments {left center right} << \
+                "hello space world\nfoo bar baz\n"]
+        return \n[join $result \n]
+    } -result {
+┌─┬─┬─┐
+│a│b│c│
+├─┼─┼─┤
+│d│e│f│
+└─┴─┴─┘
+┌─┬─┬─┐
+│a│b│c│
+├─┼─┼─┤
+│d│e│f│
+└─┴─┴─┘
+┌───┬───┬───┐
+│ a │ b │ c │
+├───┼───┼───┤
+│ d │ e │ f │
+└───┴───┴───┘
+┌─────┬─────┬─────┐
+│hello│space│world│
+├─────┼─────┼─────┤
+│foo  │ bar │  baz│
+└─────┴─────┴─────┘}
+
+        tcltest::test tabulate-2 {Tabulate as library} \
+                -setup $setup \
+                -body {
+            set result {}
+            source [file join $path lib tabulate.tcl]
+            lappend result [::tabulate::tabulate \
+                    -data {{a b c} {d e f}}]
+            lappend result [::tabulate::tabulate \
+                    -margins 1 \
+                    -data {{a b c} {d e f}}]
+            lappend result [::tabulate::tabulate \
+                    -alignments {left center right} \
+                    -data {{hello space world} {foo bar baz}}]
+            return \n[join $result \n]
+        } -result {
+┌─┬─┬─┐
+│a│b│c│
+├─┼─┼─┤
+│d│e│f│
+└─┴─┴─┘
+┌───┬───┬───┐
+│ a │ b │ c │
+├───┼───┼───┤
+│ d │ e │ f │
+└───┴───┴───┘
+┌─────┬─────┬─────┐
+│hello│space│world│
+├─────┼─────┼─────┤
+│foo  │ bar │  baz│
+└─────┴─────┴─────┘}
+
     # Exit with a nonzero status if there are failed tests.
     if {$::tcltest::numTests(Failed) > 0} {
         exit 1
