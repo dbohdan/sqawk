@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.9.2
+    variable version 0.10.0
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -276,14 +276,17 @@ proc ::tabulate::formatRow args {
         set alignment [lindex $columnAlignments $i]
         switch -exact -- $alignment {
             {} -
+            c -
             center {
                 set rightPadding [expr { $padding / 2 }]
                 set leftPadding [expr { $padding - $rightPadding }]
             }
+            l -
             left {
                 set rightPadding [expr { $padding - $margins }]
                 set leftPadding $margins
             }
+            r -
             right {
                 set rightPadding $margins
                 set leftPadding [expr { $padding - $margins }]
@@ -301,6 +304,20 @@ proc ::tabulate::formatRow args {
     }
     append result [dict get $substyle right]
     return $result
+}
+
+# Return the style value if $name is a valid style name.
+proc ::tabulate::style::by-name name {
+    if {[info exists ::tabulate::style::$name]} {
+        return [set ::tabulate::style::$name]
+    } else {
+        set message {}
+        lappend message "Unknown style name: \"$name\"; can use"
+        foreach varName [info vars ::tabulate::style::*] {
+            lappend message "   - \"[namespace tail $varName]\""
+        }
+        error [join $message \n]
+    }
 }
 
 # Read the input, process the command line options and output the result.
@@ -324,18 +341,9 @@ proc ::tabulate::main {argv0 argv} {
     # Accept style names rather than style *values* that ::tabulate::tabulate
     # normally takes.
     set styleName [::tabulate::dict-get-default $argv default -style]
-    if {[info exists ::tabulate::style::$styleName]} {
-        set style [set ::tabulate::style::$styleName]
-    } else {
-        puts "Unknown style name: \"$styleName\"; can use"
-        foreach varName [info vars ::tabulate::style::*] {
-            puts "   - \"[namespace tail $varName]\""
-        }
-        exit 1
-    }
 
     puts [tabulate -data $data \
-            -style $style \
+            -style [::tabulate::style::by-name $style] \
             -alignments $alignments \
             -margins $margins]
 }
