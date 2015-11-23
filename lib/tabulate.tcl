@@ -3,7 +3,7 @@
 # Copyright (C) 2015 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.9.0
+    variable version 0.9.1
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -62,45 +62,111 @@ namespace eval ::tabulate::style {
 
 namespace eval ::tabulate::options {}
 
-# Simulate keyword arguments in procedures that accept "args".
-# Usage: store <key in the caller's $args> in <name of a variable in the
-# caller's scope> ?default <default value>?
-proc ::tabulate::options::store {name {__in__ {}} varName
-        {__default__ {}} {default {}}} {
-    if {$__in__ ne {in}} {
-        error "incorrect keyword: \"$__in__\" instead of \"in\""
-    }
-    set useDefaultValue 0
-    if {$__default__ ne {}} {
-        if {$__default__ ne {default}} {
-            error "incorrect keyword: \"$__default__\" instead of \"default\""
-        }
-        set useDefaultValue 1
-    }
-    upvar 1 args arguments
-    upvar 1 $varName var
-    if {[dict exists $arguments $name]} {
-        set var [dict get $arguments $name]
-    } else {
-        if {$useDefaultValue} {
-            set var $default
-        } else {
-            error "no argument \"$name\" given"
-        }
-    }
-    dict unset arguments $name
+# Go to the next token in the proc parse-dsl.
+proc ::tabulate::options::next {} {
+    upvar 1 i i
+    incr i
 }
 
-# Check that the caller's $args is empty.
-proc ::tabulate::options::got-all {} {
-    upvar 1 args arguments
-    set keys [dict keys $arguments]
-    if {[llength $keys] > 0} {
-        set keysQuoted {}
-        foreach key $keys {
-            lappend keysQuoted "\"$key\""
+# Return the current token in the proc parse-dsl.
+proc ::tabulate::options::current {} {
+    upvar 1 i i
+    upvar 1 tokens tokens
+    return [lindex $tokens $i]
+}
+
+# Throw an error unless the current token equals $expected.
+proc ::tabulate::options::expect expected {
+    set current [uplevel 1 current]
+    if {$current ne $expected} {
+        error "expected \"$expected\" but got \"$current\""
+    }
+}
+
+# Convert the human-readable options DSL (see the proc parse below for its
+# syntax) into a machine-readable format (a list of dicts).
+proc ::tabulate::options::parse-dsl tokens {
+    set i 0 ;# $tokens index
+
+    set result {}
+
+    while {$i < [llength $tokens]} {
+        switch -exact -- [current] {
+            store {
+                next
+
+                set item {}
+                dict set item useDefaultValue 0
+
+                # Parse.
+                dict set item name [current]
+                next
+                expect in
+                next
+                dict set item varName [current]
+                next
+
+                if {[current] eq {default}} {
+                    next
+                    dict set item useDefaultValue 1
+                    dict set item defaultValue [current]
+                    next
+                }
+            }
+            default {
+                error "unknown keyword: \"[current]\";\
+                        expected \"store\""
+            }
         }
-        error "unknown option(s): [join $keysQuoted {, }]"
+        lappend result $item
+    }
+
+    return $result
+}
+
+# Simulate named arguments in procedures that accept "args".
+# Usage: process store <key in the caller's $tokens> in <name of a variable in
+# the caller's scope> ?default <default value>? ?store ...?
+proc ::tabulate::options::process args {
+    set opts [lindex $args 0]
+
+    set declaredOptions [parse-dsl [lrange $args 1 end]]
+    set names {}
+
+    foreach item $declaredOptions {
+        # Store value in the caller's variable $varName.
+        upvar 1 [dict get $item varName] var
+
+        set name [dict get $item name]
+        lappend names $name
+        # Do not use dict operations on $opts in order to produce a proper error
+        # message manually below if $opts has an odd number of items.
+        set keyIndex [lsearch -exact $opts $name]
+        if {$keyIndex > -1} {
+            if {$keyIndex + 1 == [llength $opts]} {
+                error "no value given for option \"$name\""
+            }
+            set var [lindex $opts $keyIndex+1]
+
+            # Remove $name and the corresponding value from opts.
+            set temp {}
+            lappend temp {*}[lrange $opts 0 $keyIndex-1]
+            lappend temp {*}[lrange $opts $keyIndex+2 end]
+            set opts $temp
+        } else {
+            if {[dict get $item useDefaultValue]} {
+                set var [dict get $item defaultValue]
+            } else {
+                error "no option \"$name\" given"
+            }
+        }
+
+    }
+
+    # Ensure $opts is empty.
+    if {[llength $opts] > 0} {
+        error "unknown option(s): $opts; can use\
+                \"[join $names {", "}]\""
     }
 }
 
@@ -119,12 +185,12 @@ proc ::tabulate::dict-get-default {dictionary default args} {
 # "center") for each column. If there are more columns than alignments in
 # $columnAlignments "center" is assumed for those columns.
 proc ::tabulate::formatRow args {
-    options::store -substyle in substyle
-    options::store -row in row
-    options::store -widths in columnWidths
-    options::store -alignments in columnAlignments default {}
-    options::store -margins in margins default 0
-    options::got-all
+    options::process $args \
+        store -substyle in substyle \
+        store -row in row \
+        store -widths in columnWidths \
+        store -alignments in columnAlignments default {} \
+        store -margins in margins default 0
 
     set result {}
     append result [dict get $substyle left]
@@ -166,11 +232,11 @@ proc ::tabulate::formatRow args {
 
 # Convert a list of lists into a string representing a table in pseudographics.
 proc ::tabulate::tabulate args {
-    options::store -data in data
-    options::store -style in style default $::tabulate::style::default
-    options::store -alignments in align default {}
-    options::store -margins in margins default 0
-    options::got-all
+    options::process $args \
+        store -data in data \
+        store -style in style default $::tabulate::style::default \
+        store -alignments in align default {} \
+        store -margins in margins default 0
 
     # Find out the maximum width of each column.
     set columnWidths {} ;# Dictionary.
@@ -234,22 +300,25 @@ proc ::tabulate::tabulate args {
 
 # Read the input, process the command line options and output the result.
 proc ::tabulate::main {argv0 argv} {
+    options::process $argv \
+        store -FS in FS default {} \
+        store -style in style default default \
+        store -alignments in alignments default {} \
+        store -margins in margins default 0
     set data [lrange [split [read stdin] \n] 0 end-1]
 
     # Input field separator. If none is given treat each line of input as a Tcl
     # list.
-    set FS [::tabulate::dict-get-default $argv {} -FS]
     if {$FS ne {}} {
         set updateData {}
         foreach line $data {
             lappend updateData [split $line $FS]
         }
         set data $updateData
-        dict unset argv -FS
     }
-    # Process style names rather than style *values*.
+    # Accept style names rather than style *values* that ::tabulate::tabulate
+    # normally takes.
     set styleName [::tabulate::dict-get-default $argv default -style]
-    dict unset argv -style
     if {[info exists ::tabulate::style::$styleName]} {
         set style [set ::tabulate::style::$styleName]
     } else {
@@ -260,7 +329,10 @@ proc ::tabulate::main {argv0 argv} {
         exit 1
     }
 
-    puts [tabulate -data $data -style $style {*}$argv]
+    puts [tabulate -data $data \
+            -style $style \
+            -alignments $alignments \
+            -margins $margins]
 }
 
 #ifndef SQAWK
