@@ -114,8 +114,7 @@ proc ::tabulate::options::parse-dsl tokens {
                 }
             }
             default {
-                error "unknown keyword: \"[current]\";\
-                        expected \"store\""
+                error "unknown keyword: \"[current]\"; expected \"store\""
             }
         }
         lappend result $item

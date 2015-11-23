@@ -67,6 +67,9 @@ namespace eval ::sqawk::tests {
     set sqliteVersion [sqawk-tcl {select sqlite_version()} << {}]
     tcltest::testConstraint printfInSqlite3 \
             [newer-or-equal $sqliteVersion 3.8.3]
+    tcltest::testConstraint jimsh [expr {
+        ![catch { exec jimsh << {} }]
+    }]
 
     tcltest::test test1 {Handle broken pipe, read from stdin} \
             -constraints unix \
@@ -394,6 +397,8 @@ namespace eval ::sqawk::tests {
             "001 a\n002 b\nc "]
 
 
+    # NF tests
+
     tcltest::test test-nf-1-crop {NF mode crop} \
             -setup $setup \
             -body {
@@ -487,13 +492,9 @@ namespace eval ::sqawk::tests {
         }} msg]
     } -result 1
 
-    proc tabulate-tcl args {
-        exec [info nameofexecutable] lib/tabulate.tcl {*}$args
-    }
+    # Tabulate tests
 
-    tcltest::test tabulate-1 {Tabulate as application} \
-            -setup $setup \
-            -body {
+    set tabulateAppTestBody {
         set result {}
         lappend result [tabulate-tcl << "a b c\nd e f\n"]
         lappend result [tabulate-tcl -FS , << "a,b,c\nd,e,f\n"]
@@ -501,7 +502,9 @@ namespace eval ::sqawk::tests {
         lappend result [tabulate-tcl -alignments {left center right} << \
                 "hello space world\nfoo bar baz\n"]
         return \n[join $result \n]
-    } -result {
+    }
+
+    set tabulateAppTestOutput {
 ┌─┬─┬─┐
 │a│b│c│
 ├─┼─┼─┤
@@ -523,26 +526,55 @@ namespace eval ::sqawk::tests {
 │foo  │ bar │  baz│
 └─────┴─────┴─────┘}
 
-        tcltest::test tabulate-2 {Tabulate as library} \
-                -setup $setup \
-                -body {
-            set result {}
-            source [file join $path lib tabulate.tcl]
-            lappend result [::tabulate::tabulate \
-                    -data {{a b c} {d e f}}]
-            lappend result [::tabulate::tabulate \
-                    -margins 1 \
-                    -data {{a b c} {d e f}}]
-            lappend result [::tabulate::tabulate \
-                    -alignments {left center right} \
-                    -data {{hello space world} {foo bar baz}}]
-            return \n[join $result \n]
-        } -result {
+    proc tabulate-tcl args {
+        exec [info nameofexecutable] lib/tabulate.tcl {*}$args
+    }
+
+    tcltest::test tabulate-1 {Tabulate as application} \
+            -setup $setup \
+            -body $tabulateAppTestBody \
+            -result $tabulateAppTestOutput
+
+    proc tabulate-tcl args {
+        exec jimsh lib/tabulate.tcl {*}$args
+    }
+
+    tcltest::test tabulate-2 {Tabulate as application with Jim Tcl} \
+            -setup $setup \
+            -constraints jimsh \
+            -body $tabulateAppTestBody \
+            -result $tabulateAppTestOutput
+
+    rename tabulate-tcl {}
+
+    tcltest::test tabulate-3 {Tabulate as library} \
+            -setup $setup \
+            -body {
+        set result {}
+        source [file join $path lib tabulate.tcl]
+        lappend result [::tabulate::tabulate \
+                -data {{a b c} {d e f}}]
+        lappend result [::tabulate::tabulate \
+                -data {{a b c} {d e f}} \
+                -style $::tabulate::style::loFi]
+        lappend result [::tabulate::tabulate \
+                -margins 1 \
+                -data {{a b c} {d e f}}]
+        lappend result [::tabulate::tabulate \
+                -alignments {left center right} \
+                -data {{hello space world} {foo bar baz}}]
+        return \n[join $result \n]
+    } -result {
 ┌─┬─┬─┐
 │a│b│c│
 ├─┼─┼─┤
 │d│e│f│
 └─┴─┴─┘
++-+-+-+
+|a|b|c|
++-+-+-+
+|d|e|f|
++-+-+-+
 ┌───┬───┬───┐
 │ a │ b │ c │
 ├───┼───┼───┤
