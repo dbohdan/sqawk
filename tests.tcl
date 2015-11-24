@@ -324,11 +324,21 @@ namespace eval ::sqawk::tests {
         with-temp-files filename ch {
             puts $ch "a,b,c\nd,e,f\ng,h,i"
             close $ch
-            set result [sqawk-tcl \
-                    -FS , -output table {select a1,a2,a3 from a} $filename]
+            set result {}
+            lappend result [sqawk-tcl \
+                    -FS , \
+                    -output table \
+                    {select a1,a2,a3 from a} $filename]
+            lappend result [sqawk-tcl \
+                    -FS , \
+                    -output {table,alignments=left center right} \
+                    {select a1,a2,a3 from a} $filename]
         }
         return $result
-    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+    } -result [list \
+        ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘ \
+        ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘ \
+    ]
 
     tcltest::test test17 {trim option} \
             -setup $setup \

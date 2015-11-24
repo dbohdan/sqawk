@@ -7,6 +7,9 @@ namespace eval ::sqawk::serializers::table {
         table
     }
     variable options {
+        alignments {}
+        margins 0
+        style default
     }
 }
 
@@ -16,5 +19,9 @@ proc ::sqawk::serializers::table::serialize {outputRecs options} {
     foreach record $outputRecs {
         lappend tableData [dict values $record]
     }
-    puts [::tabulate::tabulate -data $tableData]
+    puts [::tabulate::tabulate \
+            -data $tableData \
+            -alignments [dict get $options alignments] \
+            -margins [dict get $options margins] \
+            -style [::tabulate::style::by-name [dict get $options style]]]
 }
