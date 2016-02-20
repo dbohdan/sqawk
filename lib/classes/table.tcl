@@ -11,11 +11,19 @@ namespace eval ::sqawk {}
     option -columnprefix
     option -maxnf
     option -modenf {}
-    option -header {}
+    option -header -validatemethod Check-header -default {}
     option -datatypes {}
 
     destructor {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
+    }
+
+    method Check-header {option value} {
+        foreach item $value {
+            if {[string match *`* $item]} {
+                error {column names can't contain grave accents (`)}
+            }
+        }
     }
 
     # Return the column name for column number $i, custom (if present) or
@@ -23,7 +31,7 @@ namespace eval ::sqawk {}
     method column-name i {
         set customColName [lindex [$self cget -header] $i-1]
         if {($i > 0) && ($customColName ne "")} {
-            return $customColName
+            return `$customColName`
         } else {
             return [$self cget -columnprefix]$i
         }

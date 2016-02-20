@@ -171,17 +171,9 @@ namespace eval ::sqawk {}
         }
         # Override the header with custom column names.
         if {[info exists metadata(columns)]} {
-            set header {}
-            foreach columnName [split $metadata(columns) ,] {
-                if {[regexp {\s} $columnName]} {
-                    set columnName "\"$columnName\""
-                }
-                lappend header $columnName
-            }
+            set header [split $metadata(columns) ,]
         }
-        if {$header ne {}} {
-            $newTable configure -header $header
-        }
+        $newTable configure -header $header
 
         $newTable initialize
 

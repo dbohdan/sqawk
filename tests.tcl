@@ -362,6 +362,21 @@ namespace eval ::sqawk::tests {
         return $result
     } -result [list "1 a\n2 b\n3 c" 1\n2\n3 a\nb\nc a\nb\nc 2\n3 ]
 
+    tcltest::test test21 {Header row with spaces} \
+            -setup $setup \
+            -cleanup {unset content filename} \
+            -body {
+        set content {}
+        append content "id,a column with a long name,\"even worse - quotes!\"\n"
+        append content "1,foo,!\n"
+        append content "2,bar,%\n"
+        append content "3,baz,$\n"
+        set filename [make-temp-file $content]
+        sqawk-tcl {
+            select "a column with a long name" from a;
+            select `"even worse - quotes!"` from a
+        } FS=, header=1 $filename
+    } -result "foo\nbar\nbaz\n!\n%\n$"
 
     # NF tests
 
