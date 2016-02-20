@@ -343,6 +343,25 @@ namespace eval ::sqawk::tests {
             "001 a\n002 b\nc " \
             "001 a\n002 b\nc "]
 
+    tcltest::test test20 {"columns" per-file option} \
+            -cleanup {unset filename result} \
+            -setup $setup \
+            -body {
+        set filename [make-temp-file "001 a\n002 b\n003 c\n"]
+        set result {}
+        lappend result [sqawk-tcl \
+                {select hello,a2 from a} {columns=hello} $filename]
+        lappend result [sqawk-tcl \
+                {select "hello world" from a} {columns=hello world} $filename]
+        lappend result [sqawk-tcl \
+                {select world from a} {columns=hello,world} $filename]
+        lappend result [sqawk-tcl \
+                {select world from a} {columns=hello,world,of,tables} $filename]
+        lappend result [sqawk-tcl \
+                {select hello from a} header=1 {columns=hello,world} $filename]
+        return $result
+    } -result [list "1 a\n2 b\n3 c" 1\n2\n3 a\nb\nc a\nb\nc 2\n3 ]
+
 
     # NF tests
 

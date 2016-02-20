@@ -159,14 +159,30 @@ namespace eval ::sqawk {}
                 -columnprefix $metadata(prefix) \
                 -maxnf $metadata(NF) \
                 -modenf $metadata(MNF)
+        # Configure datatypes.
         if {[info exists metadata(datatypes)]} {
             $newTable configure -datatypes [split $metadata(datatypes) ,]
         }
+        # Configure column names.
+        set header {}
         if {[info exists metadata(header)] && $metadata(header)} {
             # Remove the first field (a0/b0/...) from the header.
             set header [lrange [lindex [::sqawk::lshift! rows] 0] 1 end]
+        }
+        # Override the header with custom column names.
+        if {[info exists metadata(columns)]} {
+            set header {}
+            foreach columnName [split $metadata(columns) ,] {
+                if {[regexp {\s} $columnName]} {
+                    set columnName "\"$columnName\""
+                }
+                lappend header $columnName
+            }
+        }
+        if {$header ne {}} {
             $newTable configure -header $header
         }
+
         $newTable initialize
 
         # Insert rows in the table.

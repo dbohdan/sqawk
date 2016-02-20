@@ -74,6 +74,7 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
+| columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Set custom column names. |
 | datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns starting with `a1` if your table is named `a`. The datatype for each column for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
 | format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
