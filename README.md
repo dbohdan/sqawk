@@ -12,23 +12,25 @@ or
 
 `sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
-One of the filenames can be `-` for standard input.
+One of the filenames can be `-` for the standard input.
 
 ## An example
 
-Here is a somewhat contrived example that shows a script, a global option and file options in use:
+Here is a somewhat contrived example that shows a script, a global option and several file options in use:
 
 ```sh
-# List all login shells are used on the system.
-sqawk -ORS '\n' 'select distinct col7 from passwords order by col7' FS=: prefix=col table=passwords /etc/passwd
+# List all login shells used on the system.
+sqawk -ORS '\n' 'select distinct shell from passwd order by shell' FS=: columns=username,password,uid,gui,info,home,shell table=passwd /etc/passwd
 ```
 
-In practice you would rather write
+or
 
 ```sh
 # Do the same thing.
 sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
 ```
+
+Sqawk allows you to be verbose to better document your script but aims to provide reasonable defaults that save you keystrokes in interactive use.
 
 [Skip down](#more-examples) for more examples.
 
@@ -74,11 +76,11 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Set custom column names. |
-| datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns starting with `a1` if your table is named `a`. The datatype for each column for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
+| columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Set custom column names for the next file. If there are more columns than custom names the columns after the last one with a custom name will be named automatically in the same manner as for the option `header=1`. Custom column names override names taken from the header. If you give a column an empty name it will be named automatically or retain the name from the header. |
+| datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns, starting with `a1` if your table is named `a`. The datatype for each column for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
 | format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
-| merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers back into one preserving the separators between them. |
+| merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers into one preserving the separator characters between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
