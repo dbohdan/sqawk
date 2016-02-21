@@ -350,19 +350,21 @@ namespace eval ::sqawk::tests {
         set filename [make-temp-file "001 a\n002 b\n003 c\n"]
         set result {}
         lappend result [sqawk-tcl \
-                {select hello, a2 from a} {columns=hello} $filename]
+                {select hello, a2 from a} columns=hello $filename]
         lappend result [sqawk-tcl \
-                {select a1, a2 from a} {columns=,,world} $filename]
+                {select a1, a2 from a} columns=,,world $filename]
         lappend result [sqawk-tcl \
                 {select "hello world" from a} {columns=hello world} $filename]
         lappend result [sqawk-tcl \
-                {select world from a} {columns=hello,world} $filename]
+                {select world from a} columns=hello,world $filename]
         lappend result [sqawk-tcl \
-                {select world from a} {columns=hello,world,of,tables} $filename]
+                {select world from a} columns=hello,world,of,tables $filename]
         lappend result [sqawk-tcl \
-                {select hello from a} header=1 {columns=hello,world} $filename]
+                {select hello from a} header=1 columns=hello,world $filename]
         lappend result [sqawk-tcl \
-                {select hello, a from a} header=1 {columns=hello} $filename]
+                {select hello, a from a} header=1 columns=hello $filename]
+        lappend result [sqawk-tcl \
+                {select a from a} header=1 columns= $filename]
         return $result
     } -result [list \
             "1 a\n2 b\n3 c" \
@@ -372,6 +374,7 @@ namespace eval ::sqawk::tests {
             a\nb\nc \
             2\n3 \
             "2 b\n3 c" \
+            b\nc \
     ]
 
     tcltest::test test21 {Header row with spaces} \
