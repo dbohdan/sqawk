@@ -362,7 +362,7 @@ namespace eval ::sqawk::tests {
         lappend result [sqawk-tcl \
                 {select hello from a} header=1 {columns=hello,world} $filename]
         lappend result [sqawk-tcl \
-                {select 1, world from a} header=1 {columns=,world} $filename]
+                {select hello, a from a} header=1 {columns=hello} $filename]
         return $result
     } -result [list \
             "1 a\n2 b\n3 c" \
@@ -371,7 +371,7 @@ namespace eval ::sqawk::tests {
             a\nb\nc \
             a\nb\nc \
             2\n3 \
-            2\n3 \
+            "2 b\n3 c" \
     ]
 
     tcltest::test test21 {Header row with spaces} \
