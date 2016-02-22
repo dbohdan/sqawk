@@ -46,7 +46,7 @@ namespace eval ::sqawk::tests {
         ![catch { exec jimsh << {} }]
     }]
 
-    tcltest::test test1 {Handle broken pipe, read from stdin} \
+    tcltest::test error-handling-1.1 {Handle broken pipe, read from stdin} \
             -constraints unix \
             -setup $setup \
             -cleanup {unset filename} \
@@ -55,23 +55,19 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a0 from a} < $filename | head -n 1
     } -result {line 1}
 
-    tcltest::test test2 {Fail on bad query or missing file} \
+    tcltest::test error-handling-2.1 {Fail on bad query} \
             -setup $setup \
-            -cleanup {unset result} \
             -body {
-        set result {}
-        # Bad query.
-        lappend result [catch {
-            sqawk-tcl -1 asdf sqawk-tcl
-        }]
-        # Missing file.
-        lappend result [catch {
-            sqawk-tcl -1 {select a0 from a} missing-file
-        }]
-        return $result
-    } -result {1 1}
+        sqawk-tcl -1 asdf sqawk-tcl
+    } -returnCodes 1 -match regexp -result {\s+}
 
-    tcltest::test test3 {JOIN on two files from examples/hp/} \
+    tcltest::test error-handling-2.2 {Fail on missing file} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -1 {select a0 from a} missing-file
+    } -returnCodes 1  -match glob -result {*can't find file "missing-file"*}
+
+    tcltest::test join-1.1 {JOIN on two files from examples/hp/} \
             -constraints unix \
             -setup $setup \
             -cleanup {unset filename} \
@@ -84,7 +80,8 @@ namespace eval ::sqawk::tests {
         exec diff examples/hp/results.correct $filename
     } -result {}
 
-    tcltest::test test4 {JOIN on files from examples/three-files/, FS setting} \
+    tcltest::test join-2.1 {JOIN on files from examples/three-files/,\
+        FS setting} \
             -constraints unix \
             -setup $setup \
             -cleanup {unset filename} \
@@ -99,7 +96,7 @@ namespace eval ::sqawk::tests {
         exec diff examples/three-files/results.correct $filename
     } -result {}
 
-    tcltest::test test5 {Custom table names} \
+    tcltest::test table-1.1 {Custom table names} \
             -setup $setup \
             -cleanup {unset filename1 filename2} \
             -body {
@@ -110,7 +107,7 @@ namespace eval ::sqawk::tests {
         } table=foo $filename1 $filename2
     } -result "1\n2\n3\n4\n5\n6"
 
-    tcltest::test test6 {Custom table names and prefixes} \
+    tcltest::test table-1.2 {Custom table names and prefixes} \
             -setup $setup \
             -cleanup {unset filename1 filename2} \
             -body {
@@ -121,7 +118,7 @@ namespace eval ::sqawk::tests {
         } table=foo prefix=x $filename1 table=bar prefix=baz $filename2
     } -result "1\n2\n3\n4\n5\n6"
 
-    tcltest::test test7 {Header row} \
+    tcltest::test header-1.1 {Header row} \
             -setup $setup \
             -cleanup {unset content filename} \
             -body {
@@ -139,7 +136,85 @@ namespace eval ::sqawk::tests {
         } FS=\t table=staff prefix=a header=1 $filename
     } -result "Smith 10\nMcDonald 12"
 
-    tcltest::test test8 {::sqawk::parsers::awk::splitmerge} \
+    tcltest::test header-1.2 {Header row with spaces} \
+            -setup $setup \
+            -cleanup {unset content filename} \
+            -body {
+        set content {}
+        append content "id,a column with a long name,\"even worse - quotes!\"\n"
+        append content "1,foo,!\n"
+        append content "2,bar,%\n"
+        append content "3,baz,$\n"
+        set filename [make-temp-file $content]
+        sqawk-tcl {
+            select "a column with a long name" from a;
+            select `"even worse - quotes!"` from a
+        } FS=, header=1 $filename
+    } -result "foo\nbar\nbaz\n!\n%\n$"
+
+    variable header3File [make-temp-file "001 a\n002 b\n003 c\n"]
+
+    tcltest::test header-3.1 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select hello, a2 from a} columns=hello $header3File
+    } -result "1 a\n2 b\n3 c"
+
+    tcltest::test header-3.2 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select a1, a2 from a} columns=,,world $header3File
+    } -result "1 a\n2 b\n3 c"
+
+    tcltest::test header-3.3 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select "hello world" from a} {columns=hello world} \
+                $header3File
+    } -result 1\n2\n3
+
+    tcltest::test header-3.4 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select world from a} columns=hello,world $header3File
+    } -result a\nb\nc
+
+    tcltest::test header-3.5 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select world from a} columns=hello,world,of,tables \
+                $header3File
+    } -result a\nb\nc \
+
+    tcltest::test header-3.6 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select hello from a} header=1 columns=hello,world \
+                $header3File
+    } -result 2\n3
+
+    tcltest::test header-3.7 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select hello, a from a} header=1 columns=hello \
+                $header3File
+    } -result "2 b\n3 c"
+
+    tcltest::test header-3.8 {"columns" per-file option} \
+            -setup $setup \
+            -body {
+        variable header3File
+        sqawk-tcl {select a from a} header=1 columns= $header3File
+    } -result b\nc
+
+    tcltest::test merge-1.1 {::sqawk::parsers::awk::splitmerge} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -172,44 +247,50 @@ namespace eval ::sqawk::tests {
         return [lsort -unique $result]
     } -result 1
 
-    tcltest::test test9 {merge option} \
+    variable merge2File [make-temp-file \
+            "foo 1   foo 2   foo 3\nbar    4 bar    5 bar    6\n"]
+
+    tcltest::test merge-2.1 {merge option} \
             -setup $setup \
-            -cleanup {unset content filename result} \
             -body {
-        set content {}
-        append content "foo 1   foo 2   foo 3\n"
-        append content "bar    4 bar    5 bar    6\n"
-        set filename [make-temp-file $content]
-        set result {}
-        lappend result [sqawk-tcl -OFS - {
+        variable merge2File
+        sqawk-tcl -OFS - {
             select a1, a2, a3 from a
-        } {merge=0-1,2-3,4-5} $filename]
-        lappend result [sqawk-tcl -OFS - {
-            select a1, a2, a3 from a
-        } {merge=0 1 2 3 4 5} $filename]
-        return [lindex [lsort -unique $result] 0]
+        } {merge=0-1,2-3,4-5} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test test10 {CSV input} \
+    tcltest::test merge-2.2 {merge option} \
             -setup $setup \
-            -cleanup {unset filename1 filename2 result} \
             -body {
-        set result {}
-        set filename1 [make-temp-file \
-                "1,2,\"Hello, World!\"\nΑλαμπουρνέζικα,3,4\n5,6,7"]
-        set filename2 [make-temp-file \
-                "1;2;\"Hello, World!\"\nΑλαμπουρνέζικα;3;4\n5;6;7"]
+        variable merge2File
+        sqawk-tcl -OFS - {
+            select a1, a2, a3 from a
+        } {merge=0 1 2 3 4 5} $merge2File
+    } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-        lappend result [sqawk-tcl -OFS - {
+    tcltest::test format-1.1 {CSV input} \
+            -setup $setup \
+            -cleanup {unset filename} \
+            -body {
+        set filename [make-temp-file \
+                "1,2,\"Hello, World!\"\nΑλαμπουρνέζικα,3,4\n5,6,7"]
+        sqawk-tcl -OFS - {
             select a1, a2, a3 from a
-        } format=csv $filename1]
-        lappend result [sqawk-tcl -OFS - {
-            select a1, a2, a3 from a
-        } format=csvalt {csvsep=;} $filename2]
-        return [lindex [lsort -unique $result] 0]
+        } format=csv $filename
     } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
 
-    tcltest::test test11 {Default output format} \
+    tcltest::test format-1.2 {CSV input} \
+            -setup $setup \
+            -cleanup {unset filename} \
+            -body {
+        set filename [make-temp-file \
+                "1;2;\"Hello, World!\"\nΑλαμπουρνέζικα;3;4\n5;6;7"]
+        sqawk-tcl -OFS - {
+            select a1, a2, a3 from a
+        } format=csvalt {csvsep=;} $filename
+    } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
+
+    tcltest::test output-1.1 {Default output format} \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -217,7 +298,113 @@ namespace eval ::sqawk::tests {
         sqawk-tcl -output awk {select a0 from a} $filename
     } -result "line 1\nline 2\nline 3"
 
-    tcltest::test test12 {Verbatim reproduction of input in a0} \
+    variable output2File [make-temp-file "a,b\n1,2"]
+
+    tcltest::test output-2.1 {CSV output} \
+            -setup $setup \
+            -body {
+        variable output2File
+        sqawk-tcl -output awk {select a1 from a} $output2File
+    } -result "a,b\n1,2"
+
+    tcltest::test output-2.2 {CSV output} \
+            -setup $setup \
+            -body {
+        variable output2File
+        sqawk-tcl -output csv {select a1 from a} $output2File
+    } -result "\"a,b\"\n\"1,2\""
+
+    variable output3File [make-temp-file "1\t2\tHello, World!\t "]
+
+    tcltest::test output-3.1 {Tcl output} \
+            -setup $setup \
+            -body {
+        variable output3File
+        sqawk-tcl \
+                -FS \t \
+                -output tcl \
+                {select a1,a2,a3,a4 from a} $output3File
+    } -result {{1 2 {Hello, World!} { }}}
+
+    tcltest::test output-3.2 {Tcl output} \
+            -setup $setup \
+            -body {
+        variable output3File
+        sqawk-tcl \
+                -FS \t \
+                -output tcl,dicts=1 \
+                {select a1,a2,a3,a4 from a} $output3File
+    } -result {{a1 1 a2 2 a3 {Hello, World!} a4 { }}}
+
+    variable output4File [make-temp-file "a,b,c\nd,e,f\ng,h,i"]
+
+    tcltest::test output-4.1 {Table output} \
+            -setup $setup \
+            -body {
+        variable output4File 
+        sqawk-tcl \
+                -FS , \
+                -output table \
+                {select a1,a2,a3 from a} $output4File
+    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+
+    tcltest::test output-4.2 {Table output} \
+            -setup $setup \
+            -body {
+        variable output4File 
+        sqawk-tcl \
+                -FS , \
+                -output {table,alignments=left center right} \
+                {select a1,a2,a3 from a} $output4File
+    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+
+    tcltest::test output-5.1 {JSON output} \
+            -setup $setup \
+            -body {
+        variable output4File
+        sqawk-tcl \
+                -FS , \
+                -output json \
+                {select a1,a2,a3 from a} $output4File
+    } -result [format {[%s,%s,%s]} \
+            {{"a1":"a","a2":"b","a3":"c"}} \
+            {{"a1":"d","a2":"e","a3":"f"}} \
+            {{"a1":"g","a2":"h","a3":"i"}}]
+
+    tcltest::test output-5.2 {JSON output} \
+            -setup $setup \
+            -body {
+        variable output4File
+        sqawk-tcl \
+                -FS , \
+                -output json,arrays=1 \
+                {select a1,a2,a3 from a} $output4File
+    } -result {[["a","b","c"],["d","e","f"],["g","h","i"]]}
+
+    variable trim1File [make-temp-file "   a  \n"]
+
+    tcltest::test trim-1.1 {trim option} \
+            -setup $setup \
+            -body {
+        variable trim1File
+        sqawk-tcl {select a1 from a} $trim1File
+    } -result {}
+
+    tcltest::test trim-1.2 {trim option} \
+            -setup $setup \
+            -body {
+        variable trim1File
+        sqawk-tcl {select a1 from a} trim=left $trim1File
+    } -result a
+
+    tcltest::test trim-1.3 {trim option} \
+            -setup $setup \
+            -body {
+        variable trim1File
+        sqawk-tcl {select a1 from a} trim=both $trim1File
+    } -result a
+
+    tcltest::test a0-1.1 {Verbatim reproduction of input in a0} \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -225,251 +412,204 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a0 from a} $filename
     } -result "test:\n\ttclsh tests.tcl\n\"\{"
 
-    tcltest::test test13 {Empty lines} \
+    variable emptyLines1File [make-temp-file "\n\n\n\n"]
+
+    tcltest::test empty-lines-1.1 {Empty lines} \
             -setup $setup \
-            -cleanup {unset filename result} \
             -body {
-        set filename [make-temp-file "\n\n\n\n"]
-        set result {}
-        lappend result [sqawk-tcl {select a1 from a} $filename]
-        lappend result [sqawk-tcl {select a1 from a} format=csv $filename]
-        return $result
-    } -result [list "\n\n\n" "\n\n\n"]
+        variable emptyLines1File
+        sqawk-tcl {select a1 from a} $emptyLines1File
+    } -result "\n\n\n"
 
-    tcltest::test test14 {CSV output} \
+    tcltest::test empty-lines-1.2 {Empty lines} \
             -setup $setup \
-            -cleanup {unset filename result} \
             -body {
-        set filename [make-temp-file "a,b\n1,2"]
-        set result {}
-        lappend result [sqawk-tcl -output awk {select a1 from a} $filename]
-        lappend result [sqawk-tcl -output csv {select a1 from a} $filename]
-        return $result
-    } -result [list "a,b\n1,2" "\"a,b\"\n\"1,2\""]
+        variable emptyLines1File
+        sqawk-tcl {select a1 from a} format=csv $emptyLines1File
+    } -result "\n\n\n"
 
-    tcltest::test test15 {Tcl output} \
+    variable datatypes1File [make-temp-file "001 a\n002 b\nc"]
+
+    tcltest::test datatypes-1.1 {Datatypes} \
             -setup $setup \
-            -cleanup {unset filename result} \
             -body {
-        set filename [make-temp-file "1\t2\tHello, World!\t "]
-        lappend result [sqawk-tcl \
-                -FS \t \
-                -output tcl \
-                {select a1,a2,a3,a4 from a} $filename]
-        lappend result [sqawk-tcl \
-                -FS \t \
-                -output tcl,dicts=1 \
-                {select a1,a2,a3,a4 from a} $filename]
-        return $result
-    } -result [list {{1 2 {Hello, World!} { }}} \
-            {{a1 1 a2 2 a3 {Hello, World!} a4 { }}}]
+        variable datatypes1File
+        sqawk-tcl {select a1,a2 from a} $datatypes1File
+    } -result "1 a\n2 b\nc "
 
-    tcltest::test test16 {Table output} \
-            -setup $setup \
-            -cleanup {unset filename result} \
-            -body {
-        set filename [make-temp-file "a,b,c\nd,e,f\ng,h,i"]
-        lappend result [sqawk-tcl \
-                -FS , \
-                -output table \
-                {select a1,a2,a3 from a} $filename]
-        lappend result [sqawk-tcl \
-                -FS , \
-                -output {table,alignments=left center right} \
-                {select a1,a2,a3 from a} $filename]
-        return $result
-    } -result [list \
-        ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘ \
-        ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘ \
-    ]
-
-    tcltest::test test17 {trim option} \
-            -setup $setup \
-            -cleanup {unset filename result} \
-            -body {
-        set filename [make-temp-file "   a  \n"]
-        set result {}
-        lappend result [sqawk-tcl {select a1 from a} $filename]
-        lappend result [sqawk-tcl {select a1 from a} trim=left $filename]
-        lappend result [sqawk-tcl {select a1 from a} trim=both $filename]
-        return $result
-    } -result {{} a a}
-
-    tcltest::test test18 {JSON output} \
-            -setup $setup \
-            -cleanup {unset filename result} \
-            -body {
-        set filename [make-temp-file "a,b,c\nd,e,f\ng,h,i\n"]
-        set result {}
-        lappend result [sqawk-tcl \
-                -FS , \
-                -output json \
-                {select a1,a2,a3 from a} $filename]
-        lappend result [sqawk-tcl \
-                -FS , \
-                -output json,arrays=1 \
-                {select a1,a2,a3 from a} $filename]
-        return $result
-    } -result [list \
-            [format {[%s,%s,%s]} \
-                    {{"a1":"a","a2":"b","a3":"c"}} \
-                    {{"a1":"d","a2":"e","a3":"f"}} \
-                    {{"a1":"g","a2":"h","a3":"i"}}] \
-            {[["a","b","c"],["d","e","f"],["g","h","i"]]}]
-
-
-    tcltest::test test19 {Datatypes} \
+    tcltest::test datatypes-1.2 {Datatypes} \
             -constraints printfInSqlite3 \
-            -cleanup {unset filename result} \
             -setup $setup \
             -body {
-        set filename [make-temp-file "001 a\n002 b\nc"]
-        set result {}
-        lappend result [sqawk-tcl \
-                {select a1,a2 from a} $filename]
-        lappend result [sqawk-tcl \
-                {select printf("%03d",a1),a2 from a} $filename]
-        lappend result [sqawk-tcl \
-                {select a1,a2 from a} datatypes=real,text $filename]
-        lappend result [sqawk-tcl \
-                {select a1,a2 from a} datatypes=null,blob $filename]
-        lappend result [sqawk-tcl \
-                {select a1,a2 from a} datatypes=text,text $filename]
-        return $result
-    } -result [list \
-            "1 a\n2 b\nc " \
-            "001 a\n002 b\n000 " \
-            "1.0 a\n2.0 b\nc " \
-            "001 a\n002 b\nc " \
-            "001 a\n002 b\nc "]
+        variable datatypes1File
+        sqawk-tcl {select printf("%03d",a1),a2 from a} $datatypes1File
+    } -result "001 a\n002 b\n000 "
 
-    tcltest::test test20 {"columns" per-file option} \
-            -cleanup {unset filename result} \
+    tcltest::test datatypes-1.3 {Datatypes} \
             -setup $setup \
             -body {
-        set filename [make-temp-file "001 a\n002 b\n003 c\n"]
-        set result {}
-        lappend result [sqawk-tcl \
-                {select hello, a2 from a} columns=hello $filename]
-        lappend result [sqawk-tcl \
-                {select a1, a2 from a} columns=,,world $filename]
-        lappend result [sqawk-tcl \
-                {select "hello world" from a} {columns=hello world} $filename]
-        lappend result [sqawk-tcl \
-                {select world from a} columns=hello,world $filename]
-        lappend result [sqawk-tcl \
-                {select world from a} columns=hello,world,of,tables $filename]
-        lappend result [sqawk-tcl \
-                {select hello from a} header=1 columns=hello,world $filename]
-        lappend result [sqawk-tcl \
-                {select hello, a from a} header=1 columns=hello $filename]
-        lappend result [sqawk-tcl \
-                {select a from a} header=1 columns= $filename]
-        return $result
-    } -result [list \
-            "1 a\n2 b\n3 c" \
-            "1 a\n2 b\n3 c" \
-            1\n2\n3 \
-            a\nb\nc \
-            a\nb\nc \
-            2\n3 \
-            "2 b\n3 c" \
-            b\nc \
-    ]
+        variable datatypes1File
+        sqawk-tcl {select a1,a2 from a} datatypes=real,text $datatypes1File
+    } -result "1.0 a\n2.0 b\nc "
 
-    tcltest::test test21 {Header row with spaces} \
+    tcltest::test datatypes-1.4 {Datatypes} \
             -setup $setup \
-            -cleanup {unset content filename} \
             -body {
-        set content {}
-        append content "id,a column with a long name,\"even worse - quotes!\"\n"
-        append content "1,foo,!\n"
-        append content "2,bar,%\n"
-        append content "3,baz,$\n"
-        set filename [make-temp-file $content]
-        sqawk-tcl {
-            select "a column with a long name" from a;
-            select `"even worse - quotes!"` from a
-        } FS=, header=1 $filename
-    } -result "foo\nbar\nbaz\n!\n%\n$"
+        variable datatypes1File
+        sqawk-tcl {select a1,a2 from a} datatypes=null,blob $datatypes1File
+    } -result "001 a\n002 b\nc "
+
+    tcltest::test datatypes-1.5 {Datatypes} \
+            -setup $setup \
+            -body {
+        variable datatypes1File
+        sqawk-tcl {select a1,a2 from a} datatypes=text,text $datatypes1File
+    } -result "001 a\n002 b\nc "
 
     # NF tests
 
-    tcltest::test test-nf-1-crop {NF mode crop} \
-            -setup $setup \
-            -cleanup {unset content filename result} \
-            -body {
-        set content {}
-        append content "A B\n"
-        append content "A B C\n"
-        append content "A B C D\n"
-        set filename [make-temp-file $content]
-        foreach nf {0 1 2 3} {
-            lappend result [sqawk-tcl \
-                -FS " " \
-                -NF $nf \
-                -MNF crop \
-                -output tcl \
-                {select * from a} $filename]
-        }
-        return [join $result \n]
-    } -result [join {
-        {{1 1 {A B}} {2 1 {A B C}} {3 1 {A B C D}}}
-        {{1 2 {A B} A} {2 2 {A B C} A} {3 2 {A B C D} A}}
-        {{1 3 {A B} A B} {2 3 {A B C} A B} {3 3 {A B C D} A B}}
-        {{1 3 {A B} A B {}} {2 4 {A B C} A B C} {3 4 {A B C D} A B C}}
-    } \n]
+    variable nf1File [make-temp-file "A B\nA B C\nA B C D\n"]
 
-    tcltest::test test-nf-2-crop {NF mode crop 2} \
+    tcltest::test nf-1.1 {NF mode crop} \
             -setup $setup \
-            -cleanup {unset content filename result} \
             -body {
-        set content {}
-        append content "A B C D\n"
-        append content "A B C\n"
-        append content "A B\n"
-        set filename [make-temp-file $content]
-        foreach nf {2 3 4} {
-            lappend result [sqawk-tcl \
+        variable nf1File
+        sqawk-tcl \
                 -FS " " \
-                -NF $nf \
+                -NF 0 \
                 -MNF crop \
                 -output tcl \
-                {select * from a} $filename]
-        }
-        return [join $result \n]
-    } -result [join {
-        {{1 3 {A B C D} A B} {2 3 {A B C} A B} {3 3 {A B} A B}}
-        {{1 4 {A B C D} A B C} {2 4 {A B C} A B C} {3 3 {A B} A B {}}}
+                {select * from a} $nf1File
+    } -result {{1 1 {A B}} {2 1 {A B C}} {3 1 {A B C D}}}
+
+    tcltest::test nf-1.2 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 1 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result {{1 2 {A B} A} {2 2 {A B C} A} {3 2 {A B C D} A}}
+
+    tcltest::test nf-1.3 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 2 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result {{1 3 {A B} A B} {2 3 {A B C} A B} {3 3 {A B C D} A B}}
+
+    tcltest::test nf-1.4 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 3 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result {{1 3 {A B} A B {}} {2 4 {A B C} A B C} {3 4 {A B C D} A B C}}
+
+    variable nf2File [make-temp-file "A B C D\nA B C\nA B\n"]
+
+    tcltest::test nf-2.1 {NF mode crop 2} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -NF 2 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result {{1 3 {A B C D} A B} {2 3 {A B C} A B} {3 3 {A B} A B}}
+
+    tcltest::test nf-2.2 {NF mode crop 2} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -NF 3 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result {{1 4 {A B C D} A B C} {2 4 {A B C} A B C} {3 3 {A B} A B {}}}
+
+    tcltest::test nf-2.3 {NF mode crop 2} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -NF 4 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result \
         {{1 5 {A B C D} A B C D} {2 4 {A B C} A B C {}} {3 3 {A B} A B {} {}}}
-    } \n]
 
-    tcltest::test test-nf-3-expand {NF mode expand} \
+    tcltest::test nf-3.1 {NF mode expand} \
             -setup $setup \
-            -cleanup {unset content filename result} \
             -body {
-        set content {}
-        append content "A B\n"
-        append content "A B C\n"
-        append content "A B C D\n"
-        set filename [make-temp-file $content]
-        foreach nf {0 1 2 3} {
-            lappend result [sqawk-tcl \
+        variable nf1File
+        sqawk-tcl \
                 -FS " " \
-                -NF $nf \
+                -NF 0 \
                 -MNF expand \
                 -output tcl \
-                {select * from a} $filename]
-        }
-        return [join $result \n]
-    } -result [join {
+                {select * from a} $nf1File
+    } -result \
         {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
-    } \n]
 
-    tcltest::test test-nf-4-normal {NF mode normal} \
+    tcltest::test nf-3.2 {NF mode expand} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 1 \
+                -MNF expand \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result \
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+
+    tcltest::test nf-3.3 {NF mode expand} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 2 \
+                -MNF expand \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result \
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+
+    tcltest::test nf-3.4 {NF mode expand} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 3 \
+                -MNF expand \
+                -output tcl \
+                {select * from a} $nf1File
+    } -result \
+        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+
+    tcltest::test nf-4.1 {NF mode normal} \
             -setup $setup \
             -cleanup {unset content filename} \
             -body {
@@ -525,8 +665,9 @@ namespace eval ::sqawk::tests {
         exec [info nameofexecutable] lib/tabulate.tcl {*}$args
     }
 
-    tcltest::test tabulate-1 {Tabulate as application} \
+    tcltest::test tabulate-1.1 {Tabulate as application} \
             -setup $setup \
+            -cleanup {unset result} \
             -body $tabulateAppTestBody \
             -result $tabulateAppTestOutput
 
@@ -534,52 +675,73 @@ namespace eval ::sqawk::tests {
         exec jimsh lib/tabulate.tcl {*}$args
     }
 
-    tcltest::test tabulate-2 {Tabulate as application with Jim Tcl} \
+    tcltest::test tabulate-1.2 {Tabulate as application with Jim Tcl} \
             -setup $setup \
+            -cleanup {unset result} \
             -constraints jimsh \
             -body $tabulateAppTestBody \
             -result $tabulateAppTestOutput
 
     rename tabulate-tcl {}
 
-    tcltest::test tabulate-3 {Tabulate as library} \
+    tcltest::test tabulate-2.1 {Tabulate as library} \
             -setup $setup \
             -body {
-        set result {}
         source [file join $path lib tabulate.tcl]
-        lappend result [::tabulate::tabulate \
-                -data {{a b c} {d e f}}]
-        lappend result [::tabulate::tabulate \
-                -data {{a b c} {d e f}} \
-                -style $::tabulate::style::loFi]
-        lappend result [::tabulate::tabulate \
-                -margins 1 \
-                -data {{a b c} {d e f}}]
-        lappend result [::tabulate::tabulate \
-                -alignments {left center right} \
-                -data {{hello space world} {foo bar baz}}]
-        return \n[join $result \n]
+        return \n[::tabulate::tabulate -data {{a b c} {d e f}}]\n
     } -result {
 ┌─┬─┬─┐
 │a│b│c│
 ├─┼─┼─┤
 │d│e│f│
 └─┴─┴─┘
+}
+
+    tcltest::test tabulate-2.2 {Tabulate as library} \
+            -setup $setup \
+            -body {
+        source [file join $path lib tabulate.tcl]
+        return  \n[::tabulate::tabulate \
+                -data {{a b c} {d e f}} \
+                -style $::tabulate::style::loFi]\n
+    } -result {
 +-+-+-+
 |a|b|c|
 +-+-+-+
 |d|e|f|
 +-+-+-+
+}
+
+    tcltest::test tabulate-2.3 {Tabulate as library} \
+            -setup $setup \
+            -body {
+        source [file join $path lib tabulate.tcl]
+        return \n[::tabulate::tabulate \
+                -margins 1 \
+                -data {{a b c} {d e f}}]\n
+    } -result {
 ┌───┬───┬───┐
 │ a │ b │ c │
 ├───┼───┼───┤
 │ d │ e │ f │
 └───┴───┴───┘
+}
+
+    tcltest::test tabulate-2.4 {Tabulate as library} \
+            -setup $setup \
+            -body {
+        set result {}
+        source [file join $path lib tabulate.tcl]
+        return \n[::tabulate::tabulate \
+                -alignments {left center right} \
+                -data {{hello space world} {foo bar baz}}]\n
+    } -result {
 ┌─────┬─────┬─────┐
 │hello│space│world│
 ├─────┼─────┼─────┤
 │foo  │ bar │  baz│
-└─────┴─────┴─────┘}
+└─────┴─────┴─────┘
+}
 
     # Exit with a nonzero status if there are failed tests.
     set failed [expr {$tcltest::numTests(Failed) > 0}]
