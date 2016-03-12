@@ -173,10 +173,14 @@ proc ::sqawk::parsers::awk::parse {data options} {
         if {[regexp $overallRegexp $mergeRanges]} {
             set mergeRanges [string map {- { } , { }} $mergeRanges]
         }
+        set mergeRangesFromZero {}
+        foreach x $mergeRanges {
+            lappend mergeRangesFromZero [expr {$x - 1}]
+        }
         foreach record $records {
             ::sqawk::parsers::awk::trim-record $trim
             lappend rows [list $record {*}[::sqawk::parsers::awk::splitmerge \
-                    $record $FS $mergeRanges]]
+                    $record $FS $mergeRangesFromZero]]
         }
     }
 

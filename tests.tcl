@@ -256,7 +256,7 @@ namespace eval ::sqawk::tests {
         variable merge2File
         sqawk-tcl -OFS - {
             select a1, a2, a3 from a
-        } {merge=0-1,2-3,4-5} $merge2File
+        } {merge=1-2,3-4,5-6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
     tcltest::test merge-2.2 {merge option} \
@@ -265,7 +265,7 @@ namespace eval ::sqawk::tests {
         variable merge2File
         sqawk-tcl -OFS - {
             select a1, a2, a3 from a
-        } {merge=0 1 2 3 4 5} $merge2File
+        } {merge=1 2 3 4 5 6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
     tcltest::test format-1.1 {CSV input} \
