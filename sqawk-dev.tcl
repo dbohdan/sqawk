@@ -9,7 +9,7 @@ package require sqlite3
 package require textutil
 
 namespace eval ::sqawk {
-    variable version 0.19.0
+    variable version 0.19.1
 }
 
 # The following comment is used by Assemble when bundling Sqawk's source code in

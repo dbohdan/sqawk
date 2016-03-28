@@ -119,13 +119,15 @@ namespace eval ::sqawk {}
                     VALUES ([join $insertValues ,])
                     "]
                 }
-                # Puts fields into the array cv.
+                # Put fields into the array cv.
                 set i 0
                 foreach field $row {
                     set cv($i) $field
                     incr i
                 }
+
                 $db eval $stat
+                unset cv
             }
         }
     }

@@ -412,6 +412,12 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a0 from a} $filename
     } -result "test:\n\ttclsh tests.tcl\n\"\{"
 
+    tcltest::test empty-fields-1.1 {Empty fields} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -FS - {select a1, a2 from a} << "0-1\n\na-b\n\nc-d\n"
+    } -result "0 1\n \na b\n \nc d"
+
     variable emptyLines1File [make-temp-file "\n\n\n\n"]
 
     tcltest::test empty-lines-1.1 {Empty lines} \
