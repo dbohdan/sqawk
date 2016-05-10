@@ -45,6 +45,9 @@ namespace eval ::sqawk::tests {
     tcltest::testConstraint jimsh [expr {
         ![catch { exec jimsh << {} }]
     }]
+    tcltest::testConstraint utf8 [expr {
+        [encoding system] eq {utf-8}
+    }]
 
     tcltest::test error-handling-1.1 {Handle broken pipe, read from stdin} \
             -constraints unix \
@@ -269,6 +272,7 @@ namespace eval ::sqawk::tests {
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
     tcltest::test format-1.1 {CSV input} \
+            -constraints utf8 \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -280,6 +284,7 @@ namespace eval ::sqawk::tests {
     } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
 
     tcltest::test format-1.2 {CSV input} \
+            -constraints utf8 \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -339,6 +344,7 @@ namespace eval ::sqawk::tests {
     variable output4File [make-temp-file "a,b,c\nd,e,f\ng,h,i"]
 
     tcltest::test output-4.1 {Table output} \
+            -constraints utf8 \
             -setup $setup \
             -body {
         variable output4File 
@@ -349,6 +355,7 @@ namespace eval ::sqawk::tests {
     } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
 
     tcltest::test output-4.2 {Table output} \
+            -constraints utf8 \
             -setup $setup \
             -body {
         variable output4File 
@@ -672,6 +679,7 @@ namespace eval ::sqawk::tests {
     }
 
     tcltest::test tabulate-1.1 {Tabulate as application} \
+            -constraints utf8 \
             -setup $setup \
             -cleanup {unset result} \
             -body $tabulateAppTestBody \
@@ -691,6 +699,7 @@ namespace eval ::sqawk::tests {
     rename tabulate-tcl {}
 
     tcltest::test tabulate-2.1 {Tabulate as library} \
+            -constraints utf8 \
             -setup $setup \
             -body {
         source [file join $path lib tabulate.tcl]
@@ -719,6 +728,7 @@ namespace eval ::sqawk::tests {
 }
 
     tcltest::test tabulate-2.3 {Tabulate as library} \
+            -constraints utf8 \
             -setup $setup \
             -body {
         source [file join $path lib tabulate.tcl]
@@ -734,6 +744,7 @@ namespace eval ::sqawk::tests {
 }
 
     tcltest::test tabulate-2.4 {Tabulate as library} \
+            -constraints utf8 \
             -setup $setup \
             -body {
         set result {}
