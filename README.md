@@ -1,6 +1,7 @@
 ![A squawk](squawk.jpg)
 
-[![Build Status](https://travis-ci.org/dbohdan/sqawk.svg?branch=master)](https://travis-ci.org/dbohdan/sqawk)
+[![Travis CI build status](https://travis-ci.org/dbohdan/sqawk.svg?branch=master)](https://travis-ci.org/dbohdan/sqawk)
+[![AppVeyor CI build status](https://ci.appveyor.com/api/projects/status/github/dbohdan/sqawk?branch=master&svg=true)](https://ci.appveyor.com/project/dbohdan/sqawk)
 
 **Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
@@ -66,7 +67,7 @@ The following are the possible values for the command line option `-output`. The
 |-------------|----------------|----------|---------|
 | awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | csv | none | `-output csv` | Output CSV. |
-| json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object with be indented for readability. |
+| json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object will be indented for readability. |
 | table | `alignments`, `margins`, `style` | `-output table,alignments=center left right` | Output plain text tables. The `table` serializer uses [Tabulate](http://tcl.wiki/41682) to format the output as a table using box-drawing characters. Note that the default Unicode table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. Use `style=loFi` to draw tables with plain ASCII characters instead. |
 | tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 
