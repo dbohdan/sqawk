@@ -1,0 +1,7 @@
+version: '{build}'
+install:
+  - ps: Invoke-WebRequest http://kitcreator.rkeene.org/kits/73e51976aa01502eb5b4365a35ac35ad38f46414/tclkit.exe -OutFile tclkit.exe
+build_script:
+  - cmd: assemble.cmd /tclsh:tclkit.exe
+test_script:
+  - cmd: tclkit.exe tests.tcl
