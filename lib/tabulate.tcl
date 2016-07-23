@@ -278,18 +278,18 @@ proc ::tabulate::formatRow args {
             {} -
             c -
             center {
-                set rightPadding [expr { $padding / 2 }]
-                set leftPadding [expr { $padding - $rightPadding }]
+                set leftPadding [expr { $padding / 2 }]
+                set rightPadding [expr { $padding - $leftPadding }]
             }
             l -
             left {
-                set rightPadding [expr { $padding - $margins }]
                 set leftPadding $margins
+                set rightPadding [expr { $padding - $margins }]
             }
             r -
             right {
-                set rightPadding $margins
                 set leftPadding [expr { $padding - $margins }]
+                set rightPadding $margins
             }
             default {
                 error "unknown alignment: \"$alignment\""
