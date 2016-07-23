@@ -789,6 +789,7 @@ namespace eval ::sqawk::tests {
 
     tcltest::test tabulate-3.0 {format-flag-synonyms} \
             -setup $setup \
+            -cleanup {unset result} \
             -body {
         set result {}
         lappend result [::tabulate::options::format-flag-synonyms -foo]
