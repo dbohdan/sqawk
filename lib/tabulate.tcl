@@ -3,7 +3,7 @@
 # Copyright (C) 2015, 2016 Danyil Bohdan
 # License: MIT
 namespace eval ::tabulate {
-    variable version 0.10.0
+    variable version 0.11.0
 }
 namespace eval ::tabulate::style {
     variable default {
@@ -87,8 +87,13 @@ proc ::tabulate::options::parse-dsl tokens {
                 dict set item useDefaultValue 0
 
                 # Parse.
-                dict set item name [current]
+                dict set item flags [current]
                 next
+                while {[current] eq {or}} {
+                    next
+                    dict lappend item flags [current]
+                    next
+                }
                 expect in
                 next
                 dict set item varName [current]
@@ -136,43 +141,61 @@ proc ::tabulate::options::expect expected {
 # caller's scope. $declaredOptions is a list of dicts as returns by the proc
 # parse-dsl.
 proc ::tabulate::options::process-parsed {opts declaredOptions} {
-    set names {}
+    set possibleOptions {}
 
     foreach item $declaredOptions {
         # Store value in the caller's variable $varName.
         upvar 1 [dict get $item varName] var
 
-        set name [dict get $item name]
-        lappend names $name
+        set flags [dict get $item flags]
+        set currentOptionSynonyms [format-flag-synonyms $flags]
+        lappend possibleOptions $currentOptionSynonyms
         # Do not use dict operations on $opts in order to produce a proper error
         # message manually below if $opts has an odd number of items.
-        set keyIndex [lsearch -exact $opts $name]
-        if {$keyIndex > -1} {
-            if {$keyIndex + 1 == [llength $opts]} {
-                error "no value given for option \"$name\""
-            }
-            set var [lindex $opts $keyIndex+1]
+        set found {}
+        foreach flag $flags {
+            set keyIndex [lsearch -exact $opts $flag]
+            if {$keyIndex > -1} {
+                if {$keyIndex + 1 == [llength $opts]} {
+                    error "no value given for option \"$flag\""
+                }
+                set var [lindex $opts $keyIndex+1]
 
-            # Remove $name and the corresponding value from opts.
-            set temp {}
-            lappend temp {*}[lrange $opts 0 $keyIndex-1]
-            lappend temp {*}[lrange $opts $keyIndex+2 end]
-            set opts $temp
-        } else {
+                # Remove $flag and the corresponding value from opts.
+                set temp {}
+                lappend temp {*}[lrange $opts 0 $keyIndex-1]
+                lappend temp {*}[lrange $opts $keyIndex+2 end]
+                set opts $temp
+
+                lappend found $flag
+            }
+        }
+        if {[llength $found] == 0} {
             if {[dict get $item useDefaultValue]} {
                 set var [dict get $item defaultValue]
             } else {
-                error "no option \"$name\" given"
+                error "no option $currentOptionSynonyms given"
             }
+        } elseif {[llength $found] > 1} {
+            error "can't use the flags \"[join $found {", "}]\" together"
         }
 
     }
 
     # Ensure $opts is empty.
     if {[llength $opts] > 0} {
-        error "unknown option(s): $opts; can use\
-                \"[join $names {", "}]\""
+        error "unknown option(s): $opts; can use [join $possibleOptions { }]"
     }
+}
+
+# Return a formatted message listing flag synonyms for an option. The first flag
+# is considered the main.
+proc ::tabulate::options::format-flag-synonyms flags {
+    set result \"[lindex $flags 0]\"
+    if {[llength $flags] > 1} {
+       append result " (\"[join [lrange $flags 1 end] {", "}]\")"
+    }
+    return $result
 }
 
 # Return a value from dictionary like [dict get] would if it is there.
@@ -190,7 +213,7 @@ proc ::tabulate::tabulate args {
     options::process $args \
         store -data in data \
         store -style in style default $::tabulate::style::default \
-        store -alignments in align default {} \
+        store -alignments or -align in alignments default {} \
         store -margins in margins default 0
 
     # Find out the maximum width of each column.
@@ -220,7 +243,7 @@ proc ::tabulate::tabulate args {
             -substyle [dict get $style top] \
             -row $emptyRow \
             -widths $columnWidths \
-            -alignments $align \
+            -alignments $alignments \
             -margins $margins]
     # For each row...
     for {set i 0} {$i < $rowCount} {incr i} {
@@ -230,7 +253,7 @@ proc ::tabulate::tabulate args {
                 -substyle [dict get $style row] \
                 -row $row \
                 -widths $columnWidths \
-                -alignments $align \
+                -alignments $alignments \
                 -margins $margins]
         # Separator.
         if {$i < $rowCount - 1} {
@@ -238,7 +261,7 @@ proc ::tabulate::tabulate args {
                     -substyle [dict get $style separator] \
                     -row $emptyRow \
                     -widths $columnWidths \
-                    -alignments $align \
+                    -alignments $alignments \
                     -margins $margins]
         }
     }
@@ -247,7 +270,7 @@ proc ::tabulate::tabulate args {
             -substyle [dict get $style bottom] \
             -row $emptyRow \
             -widths $columnWidths \
-            -alignments $align \
+            -alignments $alignments \
             -margins $margins]
 
     return [join $result \n]
@@ -262,7 +285,7 @@ proc ::tabulate::formatRow args {
         store -substyle in substyle \
         store -row in row \
         store -widths in columnWidths \
-        store -alignments in columnAlignments default {} \
+        store -alignments or -align in columnAlignments default {} \
         store -margins in margins default 0
 
     set result {}
@@ -325,7 +348,7 @@ proc ::tabulate::main {argv0 argv} {
     options::process $argv \
         store -FS in FS default {} \
         store -style in style default default \
-        store -alignments in alignments default {} \
+        store -alignments or -align in alignments default {} \
         store -margins in margins default 0
     set data [lrange [split [read stdin] \n] 0 end-1]
 

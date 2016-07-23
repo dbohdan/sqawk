@@ -747,7 +747,6 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        set result {}
         source [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate \
                 -alignments {left center right} \
@@ -759,6 +758,46 @@ namespace eval ::sqawk::tests {
 │foo  │ bar │  baz│
 └─────┴─────┴─────┘
 }
+
+    tcltest::test tabulate-2.5 {Tabulate as library} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        source [file join $path lib tabulate.tcl]
+        return \n[::tabulate::tabulate \
+                -align {left center right} \
+                -data {{hello space world} {foo bar baz}}]\n
+    } -result {
+┌─────┬─────┬─────┐
+│hello│space│world│
+├─────┼─────┼─────┤
+│foo  │ bar │  baz│
+└─────┴─────┴─────┘
+}
+
+    tcltest::test tabulate-2.6 {Tabulate as library} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        source [file join $path lib tabulate.tcl]
+        return \n[::tabulate::tabulate \
+                -alignments {left center right} \
+                -align {left center right} \
+                -data {{hello space world} {foo bar baz}}]\n
+    }       -returnCodes 1 \
+            -result {can't use the flags "-alignments", "-align" together}
+
+    tcltest::test tabulate-3.0 {format-flag-synonyms} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        set result {}
+        lappend result [::tabulate::options::format-flag-synonyms -foo]
+        lappend result [::tabulate::options::format-flag-synonyms {-foo -bar}]
+        lappend result [::tabulate::options::format-flag-synonyms \
+                {-foo -bar -baz -quux}]
+        return $result
+    } -result {{"-foo"} {"-foo" ("-bar")} {"-foo" ("-bar", "-baz", "-quux")}}
 
     # Exit with a nonzero status if there are failed tests.
     set failed [expr {$tcltest::numTests(Failed) > 0}]
