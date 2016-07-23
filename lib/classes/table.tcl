@@ -84,10 +84,12 @@ namespace eval ::sqawk {}
         $db transaction {
             foreach row $rows {
                 set nf [llength $row]
+
                 # Crop (truncate row) if needed.
                 if {$modeNF eq "crop" && $nf >= $maxNF} {
                     set nf [llength [set row [lrange $row 0 $maxNF]]]
                 }
+
                 # Prepare the command. If the current row contains more fields
                 # than exist alter the table adding columns.
                 if {$nf != $curNF &&
@@ -119,6 +121,7 @@ namespace eval ::sqawk {}
                     VALUES ([join $insertValues ,])
                     "]
                 }
+
                 # Put fields into the array cv.
                 set i 0
                 foreach field $row {

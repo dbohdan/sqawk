@@ -358,12 +358,48 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        variable output4File 
+        variable output4File
         sqawk-tcl \
                 -FS , \
                 -output {table,alignments=left center right} \
                 {select a1,a2,a3 from a} $output4File
     } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+
+    tcltest::test output-4.3 {Table output} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        variable output4File
+        sqawk-tcl \
+                -FS , \
+                -output {table,alignments=l c r} \
+                {select a1,a2,a3 from a} $output4File
+    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+
+    tcltest::test output-4.4 {Table output} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        variable output4File
+        sqawk-tcl \
+                -FS , \
+                -output {table,align=left center right} \
+                {select a1,a2,a3 from a} $output4File
+    } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
+
+    tcltest::test output-4.5 {Table output} \
+            -constraints utf8 \
+            -setup $setup \
+            -body {
+        variable output4File
+        sqawk-tcl \
+                -FS , \
+                -output {table,align=l c r,alignments=l c r} \
+                {select a1,a2,a3 from a} $output4File
+    }       -returnCodes 1 \
+            -result "can't use the synonym options \"align\" and \"alignments\"\
+                    together*" \
+            -match glob
 
     tcltest::test output-5.1 {JSON output} \
             -setup $setup \
