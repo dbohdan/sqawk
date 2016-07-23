@@ -692,7 +692,7 @@ namespace eval ::sqawk::tests {
     tcltest::test tabulate-1.2 {Tabulate as application with Jim Tcl} \
             -setup $setup \
             -cleanup {unset result} \
-            -constraints jimsh \
+            -constraints {utf8 jimsh} \
             -body $tabulateAppTestBody \
             -result $tabulateAppTestOutput
 
@@ -788,7 +788,6 @@ namespace eval ::sqawk::tests {
             -result {can't use the flags "-alignments", "-align" together}
 
     tcltest::test tabulate-3.0 {format-flag-synonyms} \
-            -constraints utf8 \
             -setup $setup \
             -body {
         set result {}
