@@ -4,6 +4,7 @@
 # License: MIT
 
 package require fileutil
+package require struct
 package require tcltest
 
 namespace eval ::sqawk::tests {
@@ -50,12 +51,17 @@ namespace eval ::sqawk::tests {
     }]
 
     tcltest::test error-handling-1.1 {Handle broken pipe, read from stdin} \
-            -constraints unix \
             -setup $setup \
-            -cleanup {unset filename} \
+            -cleanup {unset filename script} \
             -body {
         set filename [make-temp-file "line 1\nline 2\nline 3"]
-        sqawk-tcl {select a0 from a} < $filename | head -n 1
+        set script [make-temp-file {
+            fconfigure stdin -buffering line
+            puts [gets stdin]
+            exit 0
+        }]
+        sqawk-tcl {select a0 from a} < $filename \
+        | [info nameofexecutable] $script
     } -result {line 1}
 
     tcltest::test error-handling-2.1 {Fail on bad query} \
@@ -70,8 +76,16 @@ namespace eval ::sqawk::tests {
         sqawk-tcl -1 {select a0 from a} missing-file
     } -returnCodes 1  -match glob -result {*can't find file "missing-file"*}
 
+    proc difference {filename1 filename2} {
+        set lines1 [split [::fileutil::cat $filename1] \n]
+        set lines2 [split [::fileutil::cat $filename2] \n]
+        set lcs [::struct::list longestCommonSubsequence $lines2 $lines2]
+
+        return [::struct::list lcsInvert $lcs [llength $lines1] \
+                [llength $lines2]]
+    }
+
     tcltest::test join-1.1 {JOIN on two files from examples/hp/} \
-            -constraints unix \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -80,12 +94,11 @@ namespace eval ::sqawk::tests {
             select a1, b1, a2 from a inner join b on a2 = b2
             where b1 < 10000 order by b1
         } examples/hp/MD5SUMS examples/hp/du-bytes > $filename
-        exec diff examples/hp/results.correct $filename
+        difference examples/hp/results.correct $filename
     } -result {}
 
     tcltest::test join-2.1 {JOIN on files from examples/three-files/,\
         FS setting} \
-            -constraints unix \
             -setup $setup \
             -cleanup {unset filename} \
             -body {
@@ -96,7 +109,7 @@ namespace eval ::sqawk::tests {
             inner join c on a1 = c1
         } $dir/1 FS=_ FS=, $dir/2 $dir/3 > $filename
         unset dir
-        exec diff examples/three-files/results.correct $filename
+        difference examples/three-files/results.correct $filename
     } -result {}
 
     tcltest::test table-1.1 {Custom table names} \
