@@ -79,7 +79,7 @@ namespace eval ::sqawk::tests {
     proc difference {filename1 filename2} {
         set lines1 [split [::fileutil::cat $filename1] \n]
         set lines2 [split [::fileutil::cat $filename2] \n]
-        set lcs [::struct::list longestCommonSubsequence $lines2 $lines2]
+        set lcs [::struct::list longestCommonSubsequence $lines1 $lines2]
 
         return [::struct::list lcsInvert $lcs [llength $lines1] \
                 [llength $lines2]]
