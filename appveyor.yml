@@ -1,6 +1,7 @@
 version: '{build}'
 install:
   - ps: Invoke-WebRequest http://kitcreator.rkeene.org/kits/73e51976aa01502eb5b4365a35ac35ad38f46414/tclkit.exe -OutFile tclkit.exe
+  - ps: Invoke-WebRequest https://ci.appveyor.com/api/buildjobs/087d5bjjeu9b1v30/artifacts/jimsh.exe -OutFile jimsh.exe
 build_script:
   - cmd: assemble.cmd /tclsh:tclkit.exe
 test_script:
