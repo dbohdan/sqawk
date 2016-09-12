@@ -61,7 +61,7 @@ namespace eval ::sqawk::tests {
             exit 0
         }]
         sqawk-tcl {select a0 from a} < $filename \
-        | [info nameofexecutable] $script
+                | [info nameofexecutable] $script
     } -result {line 1}
 
     tcltest::test error-handling-2.1 {Fail on bad query} \
@@ -234,7 +234,7 @@ namespace eval ::sqawk::tests {
             -setup $setup \
             -cleanup {unset result} \
             -body {
-        source sqawk.tcl
+        source -encoding utf-8 sqawk.tcl
         set result {}
         set lambda {
             {from to {sep AB}} {
@@ -401,7 +401,6 @@ namespace eval ::sqawk::tests {
     } -result ┌─┬─┬─┐\n│a│b│c│\n├─┼─┼─┤\n│d│e│f│\n├─┼─┼─┤\n│g│h│i│\n└─┴─┴─┘
 
     tcltest::test output-4.5 {Table output} \
-            -constraints utf8 \
             -setup $setup \
             -body {
         variable output4File
@@ -741,7 +740,7 @@ namespace eval ::sqawk::tests {
     tcltest::test tabulate-1.2 {Tabulate as application with Jim Tcl} \
             -setup $setup \
             -cleanup {unset result} \
-            -constraints {utf8 jimsh} \
+            -constraints {jimsh utf8} \
             -body $tabulateAppTestBody \
             -result $tabulateAppTestOutput
 
@@ -751,7 +750,7 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate -data {{a b c} {d e f}}]\n
     } -result {
 ┌─┬─┬─┐
@@ -764,7 +763,7 @@ namespace eval ::sqawk::tests {
     tcltest::test tabulate-2.2 {Tabulate as library} \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return  \n[::tabulate::tabulate \
                 -data {{a b c} {d e f}} \
                 -style $::tabulate::style::loFi]\n
@@ -780,7 +779,7 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate \
                 -margins 1 \
                 -data {{a b c} {d e f}}]\n
@@ -796,7 +795,7 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate \
                 -alignments {left center right} \
                 -data {{hello space world} {foo bar baz}}]\n
@@ -812,7 +811,7 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate \
                 -align {left center right} \
                 -data {{hello space world} {foo bar baz}}]\n
@@ -825,10 +824,9 @@ namespace eval ::sqawk::tests {
 }
 
     tcltest::test tabulate-2.6 {Tabulate as library} \
-            -constraints utf8 \
             -setup $setup \
             -body {
-        source [file join $path lib tabulate.tcl]
+        source -encoding utf-8 [file join $path lib tabulate.tcl]
         return \n[::tabulate::tabulate \
                 -alignments {left center right} \
                 -align {left center right} \
