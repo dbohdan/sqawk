@@ -618,6 +618,54 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 5 {A B C D} A B C D} {2 4 {A B C} A B C {}} {3 3 {A B} A B {} {}}}
 
+    tcltest::test nf-2.4 {IMPF test} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -IMPF "1-4" \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result \
+        {{A B C D} {A B C {}} {A B {} {}}}
+
+    tcltest::test nf-2.5 {IMPF test} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -IMPF "2-3" \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result \
+        {{B C} {B C} {B {}}}
+
+    tcltest::test nf-2.6 {IMPF test} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -IMPF "2" \
+                -output tcl \
+                {select * from a} $nf2File
+    } -result \
+        {B B B}
+
+    tcltest::test nf-2.7 {IMPF test} \
+            -setup $setup \
+            -body {
+        variable nf2File
+        sqawk-tcl \
+                -FS " " \
+                -output json \
+                {select a.*, b.* from a inner join b on anr = bnr limit 2} \
+                IMPF=nr,1 $nf2File IMPF=nr,2-3 $nf2File
+    } -result \
+        {[{"anr":"1","a1":"A","bnr":"1","b2":"B","b3":"C"},{"anr":"2","a1":"A","bnr":"2","b2":"B","b3":"C"}]}
+
     tcltest::test nf-3.1 {NF mode expand} \
             -setup $setup \
             -body {

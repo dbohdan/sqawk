@@ -55,6 +55,7 @@ These options affect all files.
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `normal` makes Sqawk produce an error like `table x has no column named x11`. |
+| -IMPF value | `-IMPF nr,nf,0-`, `-IMPF 1-2` | Fields to be imported into the table (default `nr,nf,0-`). The last value should be a numeric indices (from?-?to??). Can be used to exact specifying which fields should be imported from input. (increases import performance, minimizes overhead and simplifies output of statements like `select * from a`, if e. g. fields like `anr`, `anf` and `a0` are not necessary or too many input fields available). |
 | -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
@@ -86,6 +87,7 @@ These options are set before a filename and only affect one input source.
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
 | MNF | `MNF=crop` | Same as -MNF but for one file (table). |
+| IMPF | `IMPF=nr,nf,0-`, `IMPF=nr,2-5` | Importable fields, same as -IMPF but for one file (table). |
 
 #### Input formats
 

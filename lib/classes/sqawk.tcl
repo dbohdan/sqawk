@@ -151,14 +151,32 @@ namespace eval ::sqawk {}
         set rows [$self Parse $metadata(format) $raw $fileOptions]
         unset raw
 
+        set metadata(IMPF) [split [string tolower $metadata(IMPF)] ,]
+        if {![llength $metadata(IMPF)]} {
+            set metadata(IMPF) [list 1-]
+        }
+        if {![regexp {^(\d+)(?:(-)(\d*))?$} [lindex $metadata(IMPF) end] {} sf fsep ef]} {
+            error "Field should be an indices, but got [lindex $metadata(IMPF) end]"
+        }
+        set metadata(IMPF) [lreplace $metadata(IMPF) end end]
+        if {$fsep eq {}} {
+            set ef $sf
+        }
+        if {$ef ne {}} {
+            set metadata(NF) $ef
+            set metadata(MNF) "crop"
+        }
+
         # Create and configure a new table object.
         set newTable [::sqawk::table create %AUTO%]
         $newTable configure \
                 -database [$self cget -database] \
                 -dbtable $metadata(table) \
                 -columnprefix $metadata(prefix) \
+                -stf $sf \
                 -maxnf $metadata(NF) \
-                -modenf $metadata(MNF)
+                -modenf $metadata(MNF) \
+                -impf $metadata(IMPF)
         # Configure datatypes.
         if {[info exists metadata(datatypes)]} {
             $newTable configure -datatypes [split $metadata(datatypes) ,]
