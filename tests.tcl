@@ -230,9 +230,90 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a from a} header=1 columns= $header3File
     } -result b\nc
 
-    tcltest::test merge-1.1 {::sqawk::parsers::awk::splitmerge} \
+    tcltest::test merge-1.1 {::sqawk::parsers::awk::in-range?} \
             -setup $setup \
             -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::in-range? 5 {0 1}]
+        lappend result [::sqawk::parsers::awk::in-range? 5 {0 5}]
+        lappend result [::sqawk::parsers::awk::in-range? 5 {0 99}]
+        lappend result [::sqawk::parsers::awk::in-range? 0 {0 0}]
+        lappend result [::sqawk::parsers::awk::in-range? 0 {1 1}]
+        lappend result [::sqawk::parsers::awk::in-range? 1 {0 0}]
+    } -result {0 3 2 1 0 0}
+
+    tcltest::test merge-1.2 {::sqawk::parsers::awk::overlap?} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::overlap? {0 0} {1 1}]
+        lappend result [::sqawk::parsers::awk::overlap? {1 2} {0 9}]
+        lappend result [::sqawk::parsers::awk::overlap? {0 9} {1 2}]
+        lappend result [::sqawk::parsers::awk::overlap? {0 0} {0 0}]
+        lappend result [::sqawk::parsers::awk::overlap? {0 99} {0 54}]
+    } -result {0 1 1 1 1}
+
+    tcltest::test merge-1.3 {::sqawk::parsers::awk::skipmerge 1} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {0 99}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {0 1}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {4 5}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {0 0 1 1 2 2}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {0 0 1 2 2 2}]
+    } -result {startABfooABbar {startABfoo bar} {start foo bar}\
+            {start foo bar} {start fooABbar}}
+
+    tcltest::test merge-1.4 {::sqawk::parsers::awk::skipmerge 2} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar AB} {} {0 99}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar AB} {} {0 1}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar AB} {} {4 5}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar AB} {} {0 0 1 1 2 2}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar AB} {} {0 0 1 2 2 2}]
+    } -result {startABfooABbarAB {startABfoo bar} {start foo bar}\
+            {start foo bar} {start fooABbar}}
+
+    tcltest::test merge-1.5 {::sqawk::parsers::awk::skipmerge 3} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {foo { } 1 {   } foo { } 2 {   } foo { } 3 {}} \
+                {} \
+                {0 1 2 3 4 5}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {bar {    } 4 { } bar {    } 5 { } bar {    } 6 {}} \
+                {} \
+                {0 1 2 3 4 5}]
+    } -result {{{foo 1} {foo 2} {foo 3}} {{bar    4} {bar    5} {bar    6}}}
+
+    tcltest::test merge-1.6 {::sqawk::parsers::awk::sepsplit and skipmerge} \
+            -setup $setup \
+            -cleanup {unset fs result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
@@ -248,10 +329,14 @@ namespace eval ::sqawk::tests {
         }
         for {set i 0} {$i < 20} {incr i} {
             for {set j 0} {$j <= $i} {incr j} {
-                set literalSplit [::sqawk::parsers::awk::splitmerge \
-                        startABuABvABwABxAByABzABtail {AB} [list $j $i]]
-                set regexpSplit [::sqawk::parsers::awk::splitmerge \
-                        startABuABvABwABxAByABzABtail {(AB?)+} [list $j $i]]
+                set fs [::sqawk::parsers::awk::sepsplit \
+                        startABuABvABwABxAByABzABtail {AB}]
+                set literalSplit [::sqawk::parsers::awk::skipmerge \
+                        $fs {} [list $j $i]]
+                set fs [::sqawk::parsers::awk::sepsplit \
+                        startABuABvABwABxAByABzABtail {(AB?)+}]
+                set regexpSplit [::sqawk::parsers::awk::skipmerge \
+                        $fs {} [list $j $i]]
                 set correct [apply $lambda $j $i]
                 set match [expr {
                     ($literalSplit eq $correct) && ($regexpSplit eq $correct)
@@ -275,7 +360,7 @@ namespace eval ::sqawk::tests {
         } {merge=1-2,3-4,5-6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test merge-2.2 {merge option} \
+    tcltest::test merge-2.2 {merge option alt syntax} \
             -setup $setup \
             -body {
         variable merge2File
@@ -283,6 +368,16 @@ namespace eval ::sqawk::tests {
             select a1, a2, a3 from a
         } {merge=1 2 3 4 5 6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
+
+    tcltest::test merge-2.3 {merge option with field order not sorted} \
+            -setup $setup \
+            -body {
+        variable merge2File
+        sqawk-tcl -OFS - {
+            select a1, a2, a3 from a
+        } {merge=5 6 1 2 3 4} $merge2File
+    } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
+
 
     tcltest::test format-1.1 {CSV input} \
             -constraints utf8 \

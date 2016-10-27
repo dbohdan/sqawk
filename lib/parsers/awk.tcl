@@ -14,60 +14,26 @@ namespace eval ::sqawk::parsers::awk {
     }
 }
 
-# Find which part of the range $number is for the first range it falls into in
-# out of the ranges in $rangeList. $rangeList should have the format {from1 to1
-# from2 to2 ...}.
-proc ::sqawk::parsers::awk::range-position {number rangeList} {
+# Find out if $number is in a range in $rangeList. Returns 1-3 if it is and 0 if
+# it isn't.
+proc ::sqawk::parsers::awk::in-range? {number rangeList} {
     foreach {first last} $rangeList {
-        if {$number == $first} {
-            if {$first == $last} {
-                return both
-            } else {
-                return first
-            }
-        } elseif {$number == $last} {
-            return last
+        if {$first == $number} {
+            return 1
+        }
+        if {($first < $number) && ($number < $last)} {
+            return 2
+        }
+        if {$number == $last} {
+            return 3
         }
     }
-    return none
-}
-
-# If $merge is false lappend $elem to the list stored in $varName. If $merge is
-# true append it to the last element of the same list.
-proc ::sqawk::parsers::awk::lappend-merge! {varName elem merge} {
-    upvar 1 $varName list
-    if {$merge} {
-        lset list end [lindex $list end]$elem
-    } else {
-        lappend list $elem
-    }
+    return 0
 }
 
 # Split $str on separators that match $regexp. Returns the resulting list of
-# fields with field ranges in $mergeRanges merged together with the separators
-# between them preserved.
-#
-# This procedure is based in part on ::textutil::split::splitx from Tcllib,
-# which was originally developed by Bob Techentin and released into the public
-# domain by him.
-#
-# ::textutil::split carries the following copyright notice:
-# *****************************************************************************
-#       Various ways of splitting a string.
-#
-# Copyright (c) 2000      by Ajuba Solutions.
-# Copyright (c) 2000      by Eric Melski <ericm@ajubasolutions.com>
-# Copyright (c) 2001      by Reinhard Max <max@suse.de>
-# Copyright (c) 2003      by Pat Thoyts <patthoyts@users.sourceforge.net>
-# Copyright (c) 2001-2006 by Andreas Kupries
-#                                       <andreas_kupries@users.sourceforge.net>
-#
-# See the file "license.terms" for information on usage and redistribution of
-# this file, and for a DISCLAIMER OF ALL WARRANTIES.
-# *****************************************************************************
-# The contents of "license.terms" can be found in the file "LICENSE.Tcllib" in
-# the root directory of the project.
-proc ::sqawk::parsers::awk::splitmerge {str regexp mergeRanges} {
+# fields and the list of separators between them.
+proc ::sqawk::parsers::awk::sepsplit {str regexp} {
     if {$str eq {}} {
         return {}
     }
@@ -75,69 +41,103 @@ proc ::sqawk::parsers::awk::splitmerge {str regexp mergeRanges} {
         return [split $str {}]
     }
 
-    set mergeRangesFiltered {}
-    foreach {first last} $mergeRanges {
-        if {$first < $last} {
-            lappend mergeRangesFiltered $first $last
-        }
-    }
-
     # Split $str into a list of fields and separators.
-    set fields {}
+    set fieldsAndSeps {}
     set offset 0
-    set merging 0
-    set i 0
-    set rangePos none
     while {[regexp -start $offset -indices -- $regexp $str match]} {
         lassign $match matchStart matchEnd
-        set field [string range $str $offset $matchStart-1]
+        lappend fieldsAndSeps [string range $str $offset     $matchStart-1]
+        lappend fieldsAndSeps [string range $str $matchStart $matchEnd]
 
-        set rangePos \
-                [::sqawk::parsers::awk::range-position $i $mergeRangesFiltered]
-        ::sqawk::parsers::awk::lappend-merge! fields $field $merging
-        # Switch merging on the first field of a merge range and off on the
-        # last.
-        if {$rangePos eq {first}} {
-            set merging 1
-        } elseif {$rangePos eq {last}} {
-            set merging 0
-        }
-        incr i
-
-        set sep [string range $str $matchStart $matchEnd]
-        # Append the separator if merging.
-        if {$merging} {
-            ::sqawk::parsers::awk::lappend-merge! fields $sep $merging
-        }
-
-        incr matchEnd
-        set offset $matchEnd
+        set offset [expr {$matchEnd + 1}]
     }
-    # Handle the remainer of $str after all the separators.
+    # Handle the remainder of $str after all the separators.
     set tail [string range $str $offset end]
     if {$tail ne {}} {
-        if {$rangePos eq {first}} {
-            set merging 1
-        }
-        if {$rangePos eq {last}} {
-            set merging 0
-        }
-        ::sqawk::parsers::awk::lappend-merge! fields $tail $merging
+        lappend fieldsAndSeps $tail
+        lappend fieldsAndSeps {}
     }
 
-    return $fields
+    return $fieldsAndSeps
 }
 
-# Trim the contents of the variable "record".
-proc ::sqawk::parsers::awk::trim-record mode {
-    upvar 1 record record
+# Returns $record trimmed according to $mode.
+proc ::sqawk::parsers::awk::trim-record {record mode} {
     switch -exact -- $mode {
-        both { set record [string trim $record] }
-        left { set record [string trimleft $record] }
-        right { set record [string trimright $record] }
-        none {}
-        default { error "unknown mode: \"$mode\"" }
+        both    { set record [string trim $record]      }
+        left    { set record [string trimleft $record]  }
+        right   { set record [string trimright $record] }
+        none    {}
+        default { error "unknown mode: \"$mode\""       }
     }
+    return $record
+}
+
+# Return 1 if two lists of ranges have overlapping ranges and 0 otherwise.
+proc ::sqawk::parsers::awk::overlap? {ranges1 ranges2} {
+    set values {}
+    foreach {from to} $ranges1 {
+        for {set i $from} {$i <= $to} {incr i} {
+            lappend values $i
+        }
+    }
+    foreach {from to} $ranges2 {
+        for {set i $from} {$i <= $to} {incr i} {
+            if {$i in $values} {
+                return 1
+            }
+        }
+    }
+    return 0
+}
+
+# Merge fields in $mergeRanges and remove those in $skipRanges provided the two
+# lists of ranges do not overlap.
+proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges} {
+    if {[::sqawk::parsers::awk::overlap? $skipRanges $mergeRanges]} {
+        error {skip and merge ranges overlap;\
+                can't skip and merge the same field}
+    }
+    set columns {}
+    set i 0
+    set prevSep {}
+    foreach {field sep} $fieldsAndSeps {
+        set skip [::sqawk::parsers::awk::in-range? $i $skipRanges]
+        set merge [::sqawk::parsers::awk::in-range? $i $mergeRanges]
+        if {$skip} {
+            # Skipping.
+        } elseif {$merge > 1} {
+            if {$columns eq {}} {
+                lappend columns {}
+            }
+            lset columns end [lindex $columns end]${prevSep}$field
+        } else {
+            lappend columns $field
+        }
+
+        set prevSep $sep
+        incr i
+    }
+    if {$merge == 2} {
+        lset columns end [lindex $columns end]$prevSep
+    }
+
+    return $columns
+}
+
+# Takes a range string like {1-2,3-4,5-6} or {1 2 3 4 5 6} and returns a list
+# like {0 1 2 3 4 5}.
+proc ::sqawk::parsers::awk::normalizeRanges ranges {
+    set rangeRegexp {[0-9]+-[0-9]+}
+    set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
+    if {[regexp $overallRegexp $ranges]} {
+        set ranges [string map {- { } , { }} $ranges]
+    }
+    set rangesFromZero {}
+    foreach x $ranges {
+        lappend rangesFromZero [expr {$x - 1}]
+    }
+    return $rangesFromZero
 }
 
 # Convert raw text data into a list of database rows using regular
@@ -162,25 +162,19 @@ proc ::sqawk::parsers::awk::parse {data options} {
     set rows {}
     if {$mergeRanges eq {}} {
         foreach record $records {
-            ::sqawk::parsers::awk::trim-record $trim
+            set record [::sqawk::parsers::awk::trim-record $record $trim]
             lappend rows [list $record {*}[::textutil::splitx $record $FS]]
         }
     } else {
-        # Allow both the {1-2,3-4,5-6} and the {1 2 3 4 5 6} syntax for the
-        # "merge" option.
-        set rangeRegexp {[0-9]+-[0-9]+}
-        set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
-        if {[regexp $overallRegexp $mergeRanges]} {
-            set mergeRanges [string map {- { } , { }} $mergeRanges]
-        }
-        set mergeRangesFromZero {}
-        foreach x $mergeRanges {
-            lappend mergeRangesFromZero [expr {$x - 1}]
-        }
+        set mergeRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
+                $mergeRanges]
         foreach record $records {
-            ::sqawk::parsers::awk::trim-record $trim
-            lappend rows [list $record {*}[::sqawk::parsers::awk::splitmerge \
-                    $record $FS $mergeRangesFromZero]]
+            set record [::sqawk::parsers::awk::trim-record $record $trim]
+            set columns [::sqawk::parsers::awk::skipmerge \
+                    [::sqawk::parsers::awk::sepsplit $record $FS] \
+                    {} \
+                    $mergeRangesFromZero]
+            lappend rows [list $record {*}$columns]
         }
     }
 
