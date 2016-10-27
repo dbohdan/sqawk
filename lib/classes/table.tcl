@@ -9,10 +9,12 @@ namespace eval ::sqawk {}
     option -database
     option -dbtable
     option -columnprefix
+    option -stf 0
     option -maxnf
     option -modenf {}
     option -header -validatemethod Check-header -default {}
     option -datatypes {}
+    option -impf {nr nf}
 
     destructor {
         [$self cget -database] eval "DROP TABLE [$self cget -dbtable]"
@@ -54,15 +56,19 @@ namespace eval ::sqawk {}
     method initialize {} {
         set fields {}
         set colPrefix [$self cget -columnprefix]
+        if {"nr" in [$self cget -impf]} {
+            lappend fields "${colPrefix}nr INTEGER PRIMARY KEY"
+        }
+        if {"nf" in [$self cget -impf]} {
+            lappend fields "${colPrefix}nf INTEGER"
+        }
         set command {
             CREATE TABLE [$self cget -dbtable] (
-                ${colPrefix}nr INTEGER PRIMARY KEY,
-                ${colPrefix}nf INTEGER,
                 [join $fields ","]
             )
         }
         set maxNF [$self cget -maxnf]
-        for {set i 0} {$i <= $maxNF} {incr i} {
+        for {set i [$self cget -stf]} {$i <= $maxNF} {incr i} {
             lappend fields "[$self column-name $i] [$self column-datatype $i]"
         }
         [$self cget -database] eval [subst $command]
@@ -78,16 +84,21 @@ namespace eval ::sqawk {}
         set maxNF [$self cget -maxnf]
         set modeNF [$self cget -modenf]
         set curNF 0
-        set insertColumnNames [list "${colPrefix}nf"]
-        set insertValues [list {$nf}]
+        set stF [$self cget -stf]
+        set insertColumnNames {}
+        set insertValues {}
+        if {"nf" in [$self cget -impf]} {
+            lappend insertColumnNames "${colPrefix}nf"
+            lappend insertValues {$nf}
+        }
 
         $db transaction {
             foreach row $rows {
                 set nf [llength $row]
 
                 # Crop (truncate row) if needed.
-                if {$modeNF eq "crop" && $nf >= $maxNF} {
-                    set nf [llength [set row [lrange $row 0 $maxNF]]]
+                if {$modeNF eq "crop" && $nf >= $maxNF-$stF} {
+                    set nf [llength [set row [lrange $row $stF $maxNF]]]
                 }
 
                 # Prepare the command. If the current row contains more fields
@@ -97,7 +108,7 @@ namespace eval ::sqawk {}
                     if {$curNF < $nf} {
                         set i $curNF
                         while {$i < $nf} {
-                            lappend insertColumnNames [$self column-name $i]
+                            lappend insertColumnNames [$self column-name [expr {$stF+$i}]]
                             lappend insertValues "\$cv($i)"
                             incr i
                         }
@@ -124,6 +135,7 @@ namespace eval ::sqawk {}
 
                 # Put fields into the array cv.
                 set i 0
+                array set cv {}
                 foreach field $row {
                     set cv($i) $field
                     incr i
