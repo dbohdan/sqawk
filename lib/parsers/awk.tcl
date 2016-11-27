@@ -10,6 +10,7 @@ namespace eval ::sqawk::parsers::awk {
         FS {}
         RS {}
         merge {}
+        skip {}
         trim none
     }
 }
@@ -146,6 +147,7 @@ proc ::sqawk::parsers::awk::parse {data options} {
     # Parse $args.
     set RS [dict get $options RS]
     set FS [dict get $options FS]
+    set skipRanges [dict get $options skip]
     set mergeRanges [dict get $options merge]
     set trim [dict get $options trim]
 
@@ -160,19 +162,21 @@ proc ::sqawk::parsers::awk::parse {data options} {
 
     # Split records into fields.
     set rows {}
-    if {$mergeRanges eq {}} {
+    if {($skipRanges eq {}) && ($mergeRanges eq {})} {
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
             lappend rows [list $record {*}[::textutil::splitx $record $FS]]
         }
     } else {
+        set skipRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
+                $skipRanges]
         set mergeRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
                 $mergeRanges]
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
             set columns [::sqawk::parsers::awk::skipmerge \
                     [::sqawk::parsers::awk::sepsplit $record $FS] \
-                    {} \
+                    $skipRangesFromZero \
                     $mergeRangesFromZero]
             lappend rows [list $record {*}$columns]
         }

@@ -83,6 +83,7 @@ These options are set before a filename and only affect one input source.
 | header | `header=1` | Can be 0/false or 1. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers into one preserving the separator characters between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
+| skip | `skip=1-1,3-5`, `'skip=1 1 3 5'` | Do not insert the fields in the given ranges into the table. If your table has columns `a1`, `a2`, `a3`, etc. and you skip fields 2 through 4 then the contents of field 5 goes into column `a2`, the contents of field 6 into `a3`, etc. |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | NF | `NF=20` | Same as -NF but for one file. |
 | MNF | `MNF=crop` | Same as -MNF but for one file (table). |

@@ -230,7 +230,7 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a from a} header=1 columns= $header3File
     } -result b\nc
 
-    tcltest::test merge-1.1 {::sqawk::parsers::awk::in-range?} \
+    tcltest::test skip-and-merge-1.1 {::sqawk::parsers::awk::in-range?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -244,7 +244,7 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::in-range? 1 {0 0}]
     } -result {0 3 2 1 0 0}
 
-    tcltest::test merge-1.2 {::sqawk::parsers::awk::overlap?} \
+    tcltest::test skip-and-merge-1.2 {::sqawk::parsers::awk::overlap?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -257,7 +257,7 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::overlap? {0 99} {0 54}]
     } -result {0 1 1 1 1}
 
-    tcltest::test merge-1.3 {::sqawk::parsers::awk::skipmerge 1} \
+    tcltest::test skip-and-merge-2.1 {::sqawk::parsers::awk::skipmerge} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -276,7 +276,7 @@ namespace eval ::sqawk::tests {
     } -result {startABfooABbar {startABfoo bar} {start foo bar}\
             {start foo bar} {start fooABbar}}
 
-    tcltest::test merge-1.4 {::sqawk::parsers::awk::skipmerge 2} \
+    tcltest::test skip-and-merge-2.2 {::sqawk::parsers::awk::skipmerge} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -295,7 +295,7 @@ namespace eval ::sqawk::tests {
     } -result {startABfooABbarAB {startABfoo bar} {start foo bar}\
             {start foo bar} {start fooABbar}}
 
-    tcltest::test merge-1.5 {::sqawk::parsers::awk::skipmerge 3} \
+    tcltest::test skip-and-merge-2.3 {::sqawk::parsers::awk::skipmerge} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -311,7 +311,36 @@ namespace eval ::sqawk::tests {
                 {0 1 2 3 4 5}]
     } -result {{{foo 1} {foo 2} {foo 3}} {{bar    4} {bar    5} {bar    6}}}
 
-    tcltest::test merge-1.6 {::sqawk::parsers::awk::sepsplit and skipmerge} \
+    tcltest::test skip-and-merge-2.4 {::sqawk::parsers::awk::skipmerge} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {foo { } 1 {   } foo { } 2 {   } foo { } 3 {}} \
+                {0 0 2 2 4 4} \
+                {1 1}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {bar {    } 4 { } bar {    } 5 { } bar {    } 6 {}} \
+                {0 0 2 2 4 4} \
+                {3 3}]
+    } -result {{1 2 3} {4 5 6}}
+
+    tcltest::test skip-and-merge-2.5 {::sqawk::parsers::awk::skipmerge} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::skipmerge \
+                {foo { } bar} \
+                {0 1} \
+                {0 2}]
+    } -returnCodes 1 -result {skip and merge ranges overlap;\
+                              can't skip and merge the same field}
+
+    tcltest::test skip-and-merge-3.1 {::sqawk::parsers::awk::sepsplit and skipmerge} \
             -setup $setup \
             -cleanup {unset fs result} \
             -body {
@@ -351,7 +380,7 @@ namespace eval ::sqawk::tests {
     variable merge2File [make-temp-file \
             "foo 1   foo 2   foo 3\nbar    4 bar    5 bar    6\n"]
 
-    tcltest::test merge-2.1 {merge option} \
+    tcltest::test skip-and-merge-4.1 {merge option} \
             -setup $setup \
             -body {
         variable merge2File
@@ -360,7 +389,7 @@ namespace eval ::sqawk::tests {
         } {merge=1-2,3-4,5-6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test merge-2.2 {merge option alt syntax} \
+    tcltest::test skip-and-merge-4.2 {merge option alt syntax} \
             -setup $setup \
             -body {
         variable merge2File
@@ -369,7 +398,7 @@ namespace eval ::sqawk::tests {
         } {merge=1 2 3 4 5 6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test merge-2.3 {merge option with field order not sorted} \
+    tcltest::test skip-and-merge-4.3 {merge option with field order not sorted} \
             -setup $setup \
             -body {
         variable merge2File
@@ -377,6 +406,25 @@ namespace eval ::sqawk::tests {
             select a1, a2, a3 from a
         } {merge=5 6 1 2 3 4} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
+
+    tcltest::test skip-and-merge-4.4 {skip option} \
+            -setup $setup \
+            -body {
+        variable merge2File
+        sqawk-tcl -OFS - {
+            select a1, a2 from a
+        } {skip=2 5} $merge2File
+    } -result "foo-3\nbar-6"
+
+
+    tcltest::test skip-and-merge-4.5 {skip and merge option} \
+            -setup $setup \
+            -body {
+        variable merge2File
+        sqawk-tcl -OFS - {
+            select a1, a2 from a
+        } {skip=3 4} {merge=1 2 5 6} $merge2File
+    } -result "foo 1-foo 3\nbar    4-bar    6"
 
 
     tcltest::test format-1.1 {CSV input} \
@@ -455,7 +503,7 @@ namespace eval ::sqawk::tests {
             -constraints utf8 \
             -setup $setup \
             -body {
-        variable output4File 
+        variable output4File
         sqawk-tcl \
                 -FS , \
                 -output table \
