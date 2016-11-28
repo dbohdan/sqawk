@@ -9,6 +9,7 @@ namespace eval ::sqawk {}
     option -database
     option -dbtable
     option -columnprefix
+    option -startf
     option -maxnf
     option -modenf {}
     option -header -validatemethod Check-header -default {}
@@ -61,8 +62,9 @@ namespace eval ::sqawk {}
                 [join $fields ","]
             )
         }
+        set startF [$self cget -startf]
         set maxNF [$self cget -maxnf]
-        for {set i 0} {$i <= $maxNF} {incr i} {
+        for {set i $startF} {$i <= $maxNF} {incr i} {
             lappend fields "[$self column-name $i] [$self column-datatype $i]"
         }
         [$self cget -database] eval [subst $command]
@@ -80,6 +82,7 @@ namespace eval ::sqawk {}
         set curNF 0
         set insertColumnNames [list "${colPrefix}nf"]
         set insertValues [list {$nf}]
+        set startF [$self cget -startf]
 
         $db transaction {
             foreach row $rows {
@@ -95,15 +98,17 @@ namespace eval ::sqawk {}
                 if {$nf != $curNF &&
                         [catch {set stat $rowInsertCommand($nf)}]} {
                     if {$curNF < $nf} {
-                        set i $curNF
+                        set i $startF
                         while {$i < $nf} {
                             lappend insertColumnNames [$self column-name $i]
                             lappend insertValues "\$cv($i)"
                             incr i
                         }
                     } else {
-                        set insertColumnNames [lrange $insertColumnNames 0 $nf]
-                        set insertValues [lrange $insertValues 0 $nf]
+                        set insertColumnNames \
+                                [lrange $insertColumnNames $startF $nf]
+                        set insertValues \
+                                [lrange $insertValues $startF $nf]
                     }
                     # Expand (alter) table if needed.
                     if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
@@ -123,12 +128,12 @@ namespace eval ::sqawk {}
                 }
 
                 # Put fields into the array cv.
-                set i 0
-                foreach field $row {
+                set i $startF
+                foreach field [lrange $row $startF end] {
                     set cv($i) $field
                     incr i
                 }
-
+                #if {$startF==1} { puts stderr $stat }
                 $db eval $stat
                 unset cv
             }

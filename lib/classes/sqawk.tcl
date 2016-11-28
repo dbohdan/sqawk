@@ -126,8 +126,9 @@ namespace eval ::sqawk {}
     method read-file fileOptions {
         # Set the default table name ("a", "b", "c", ..., "z").
         set defaultTableName [lindex $defaultTableNames [dict size $tables]]
-        ::sqawk::dict-ensure-default fileOptions table $defaultTableName
         # Set the default column name prefix equal to the table name.
+        ::sqawk::dict-ensure-default fileOptions table $defaultTableName
+        ::sqawk::dict-ensure-default fileOptions F0 1
         ::sqawk::dict-ensure-default fileOptions csvquote \"
         ::sqawk::dict-ensure-default fileOptions csvsep ,
         ::sqawk::dict-ensure-default fileOptions format raw
@@ -157,6 +158,7 @@ namespace eval ::sqawk {}
                 -database [$self cget -database] \
                 -dbtable $metadata(table) \
                 -columnprefix $metadata(prefix) \
+                -startf [expr {!$metadata(F0)}] \
                 -maxnf $metadata(NF) \
                 -modenf $metadata(MNF)
         # Configure datatypes.

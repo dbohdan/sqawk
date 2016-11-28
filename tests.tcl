@@ -610,6 +610,30 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a0 from a} $filename
     } -result "test:\n\ttclsh tests.tcl\n\"\{"
 
+    tcltest::test a0-1.2 {Explicitly enable a0} \
+            -setup $setup \
+            -cleanup {unset filename} \
+            -body {
+        set filename [make-temp-file "test:\n\ttclsh tests.tcl\n\"\{"]
+        sqawk-tcl {select a0 from a} F0=yes $filename
+    } -result "test:\n\ttclsh tests.tcl\n\"\{"
+
+    tcltest::test a0-1.3 {Disable a0 and try to select it} \
+            -setup $setup \
+            -cleanup {unset filename} \
+            -body {
+        set filename [make-temp-file "test:\n\ttclsh tests.tcl\n\"\{"]
+        sqawk-tcl {select a0 from a} F0=off $filename
+    } -returnCodes 1 -match glob -result {no such column: a0*}
+
+    tcltest::test a0-1.4 {Disable a0 and do unrelated things} \
+            -setup $setup \
+            -cleanup {unset filename} \
+            -body {
+        set filename [make-temp-file "1 2 3\n4 5 6"]
+        sqawk-tcl {select a1, a2 from a} F0=off $filename
+    } -result "1 2\n4 5"
+
     tcltest::test empty-fields-1.1 {Empty fields} \
             -setup $setup \
             -body {
