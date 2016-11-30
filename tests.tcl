@@ -695,7 +695,7 @@ namespace eval ::sqawk::tests {
 
     variable nf1File [make-temp-file "A B\nA B C\nA B C D\n"]
 
-    tcltest::test nf-1.1 {NF mode crop} \
+    tcltest::test nf-1.1 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -707,7 +707,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf1File
     } -result {{1 0 {A B}} {2 0 {A B C}} {3 0 {A B C D}}}
 
-    tcltest::test nf-1.2 {NF mode crop} \
+    tcltest::test nf-1.2 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -719,7 +719,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf1File
     } -result {{1 1 {A B} A} {2 1 {A B C} A} {3 1 {A B C D} A}}
 
-    tcltest::test nf-1.3 {NF mode crop} \
+    tcltest::test nf-1.3 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -731,7 +731,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf1File
     } -result {{1 2 {A B} A B} {2 2 {A B C} A B} {3 2 {A B C D} A B}}
 
-    tcltest::test nf-1.4 {NF mode crop} \
+    tcltest::test nf-1.4 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -743,7 +743,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf1File
     } -result {{1 2 {A B} A B {}} {2 3 {A B C} A B C} {3 3 {A B C D} A B C}}
 
-    tcltest::test nf-1.5 {NF mode crop} \
+    tcltest::test nf-1.5 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -755,7 +755,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} F0=false $nf1File
     } -result {{1 0} {2 0} {3 0}}
 
-    tcltest::test nf-1.6 {NF mode crop} \
+    tcltest::test nf-1.6 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -767,7 +767,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} F0=false $nf1File
     } -result {{1 1 A} {2 1 A} {3 1 A}}
 
-    tcltest::test nf-1.7 {NF mode crop} \
+    tcltest::test nf-1.7 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -779,7 +779,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} F0=false $nf1File
     } -result {{1 2 A B} {2 2 A B} {3 2 A B}}
 
-    tcltest::test nf-1.8 {NF mode crop} \
+    tcltest::test nf-1.8 {NF mode "crop"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -794,7 +794,7 @@ namespace eval ::sqawk::tests {
 
     variable nf2File [make-temp-file "A B C D\nA B C\nA B\n"]
 
-    tcltest::test nf-2.1 {NF mode crop 2} \
+    tcltest::test nf-2.1 {NF mode "crop" 2} \
             -setup $setup \
             -body {
         variable nf2File
@@ -806,7 +806,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf2File
     } -result {{1 2 {A B C D} A B} {2 2 {A B C} A B} {3 2 {A B} A B}}
 
-    tcltest::test nf-2.2 {NF mode crop 2} \
+    tcltest::test nf-2.2 {NF mode "crop" 2} \
             -setup $setup \
             -body {
         variable nf2File
@@ -818,7 +818,7 @@ namespace eval ::sqawk::tests {
                 {select * from a} $nf2File
     } -result {{1 3 {A B C D} A B C} {2 3 {A B C} A B C} {3 2 {A B} A B {}}}
 
-    tcltest::test nf-2.3 {NF mode crop 2} \
+    tcltest::test nf-2.3 {NF mode "crop" 2} \
             -setup $setup \
             -body {
         variable nf2File
@@ -831,7 +831,7 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 4 {A B C D} A B C D} {2 3 {A B C} A B C {}} {3 2 {A B} A B {} {}}}
 
-    tcltest::test nf-3.1 {NF mode expand} \
+    tcltest::test nf-3.1 {NF mode "expand"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -844,7 +844,7 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
-    tcltest::test nf-3.2 {NF mode expand} \
+    tcltest::test nf-3.2 {NF mode "expand"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -857,7 +857,7 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
-    tcltest::test nf-3.3 {NF mode expand} \
+    tcltest::test nf-3.3 {NF mode "expand"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -870,7 +870,7 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
-    tcltest::test nf-3.4 {NF mode expand} \
+    tcltest::test nf-3.4 {NF mode "expand"} \
             -setup $setup \
             -body {
         variable nf1File
@@ -883,7 +883,7 @@ namespace eval ::sqawk::tests {
     } -result \
         {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
-    tcltest::test nf-4.1 {NF mode normal} \
+    tcltest::test nf-4.1 {NF mode "error"} \
             -setup $setup \
             -cleanup {unset content filename} \
             -body {
@@ -891,15 +891,29 @@ namespace eval ::sqawk::tests {
         append content "A B\n"
         append content "A B C\n"
         set filename [make-temp-file $content]
-        catch {
-            sqawk-tcl \
-                -FS " " \
-                -NF 2 \
-                -MNF normal \
-                -output tcl \
-                {select * from a} $filename
-        }
-    } -result 1
+        sqawk-tcl \
+            -FS " " \
+            -NF 2 \
+            -MNF error \
+            -output tcl \
+            {select * from a} $filename
+    } -returnCodes 1 -match glob -result {table a has no column named a3*}
+
+    tcltest::test nf-5.1 {invalid NF mode} \
+            -setup $setup \
+            -cleanup {unset content filename} \
+            -body {
+        set content {}
+        append content "A B\n"
+        append content "A B C\n"
+        set filename [make-temp-file $content]
+        sqawk-tcl \
+            -FS " " \
+            -NF 2 \
+            -MNF foo \
+            -output tcl \
+            {select * from a} $filename
+    } -returnCodes 1 -match glob -result {invalid MNF value: "foo"*}
 
     # Tabulate tests
 

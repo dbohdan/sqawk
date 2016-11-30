@@ -53,8 +53,8 @@ These options affect all files.
 | -RS value | `-RS '\n'` | Input record separator for the default parser (one for all input files). |
 | -OFS value | `-OFS ' '` | Output field separator for the default serializer. |
 | -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
-| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=normal` only). |
-| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `normal` makes Sqawk produce an error like `table x has no column named x11`. |
+| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=error` only). |
+| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `error` makes Sqawk produce an error like `table x has no column named x11`. |
 | -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |

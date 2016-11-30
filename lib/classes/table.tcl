@@ -11,7 +11,7 @@ namespace eval ::sqawk {}
     option -columnprefix
     option -f0 true
     option -maxnf
-    option -modenf {}
+    option -modenf -validatemethod Check-modenf -default error
     option -header -validatemethod Check-header -default {}
     option -datatypes {}
 
@@ -24,6 +24,12 @@ namespace eval ::sqawk {}
             if {[string match *`* $item]} {
                 error {column names can't contain grave accents (`)}
             }
+        }
+    }
+
+    method Check-modenf {option value} {
+        if {$value ni {crop error expand}} {
+            error "invalid MNF value: \"$value\""
         }
     }
 
