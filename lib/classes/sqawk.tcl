@@ -158,7 +158,7 @@ namespace eval ::sqawk {}
                 -database [$self cget -database] \
                 -dbtable $metadata(table) \
                 -columnprefix $metadata(prefix) \
-                -startf [expr {!$metadata(F0)}] \
+                -f0 $metadata(F0) \
                 -maxnf $metadata(NF) \
                 -modenf $metadata(MNF)
         # Configure datatypes.

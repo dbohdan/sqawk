@@ -708,7 +708,7 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf1File
-    } -result {{1 1 {A B}} {2 1 {A B C}} {3 1 {A B C D}}}
+    } -result {{1 0 {A B}} {2 0 {A B C}} {3 0 {A B C D}}}
 
     tcltest::test nf-1.2 {NF mode crop} \
             -setup $setup \
@@ -720,7 +720,7 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf1File
-    } -result {{1 2 {A B} A} {2 2 {A B C} A} {3 2 {A B C D} A}}
+    } -result {{1 1 {A B} A} {2 1 {A B C} A} {3 1 {A B C D} A}}
 
     tcltest::test nf-1.3 {NF mode crop} \
             -setup $setup \
@@ -732,7 +732,7 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf1File
-    } -result {{1 3 {A B} A B} {2 3 {A B C} A B} {3 3 {A B C D} A B}}
+    } -result {{1 2 {A B} A B} {2 2 {A B C} A B} {3 2 {A B C D} A B}}
 
     tcltest::test nf-1.4 {NF mode crop} \
             -setup $setup \
@@ -744,7 +744,56 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf1File
-    } -result {{1 3 {A B} A B {}} {2 4 {A B C} A B C} {3 4 {A B C D} A B C}}
+    } -result {{1 2 {A B} A B {}} {2 3 {A B C} A B C} {3 3 {A B C D} A B C}}
+
+    tcltest::test nf-1.5 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 0 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} F0=false $nf1File
+    } -result {{1 0} {2 0} {3 0}}
+
+    tcltest::test nf-1.6 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 1 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} F0=false $nf1File
+    } -result {{1 1 A} {2 1 A} {3 1 A}}
+
+    tcltest::test nf-1.7 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 2 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} F0=false $nf1File
+    } -result {{1 2 A B} {2 2 A B} {3 2 A B}}
+
+    tcltest::test nf-1.8 {NF mode crop} \
+            -setup $setup \
+            -body {
+        variable nf1File
+        sqawk-tcl \
+                -FS " " \
+                -NF 3 \
+                -MNF crop \
+                -output tcl \
+                {select * from a} F0=false $nf1File
+    } -result {{1 2 A B {}} {2 3 A B C} {3 3 A B C}}
+
 
     variable nf2File [make-temp-file "A B C D\nA B C\nA B\n"]
 
@@ -758,7 +807,7 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf2File
-    } -result {{1 3 {A B C D} A B} {2 3 {A B C} A B} {3 3 {A B} A B}}
+    } -result {{1 2 {A B C D} A B} {2 2 {A B C} A B} {3 2 {A B} A B}}
 
     tcltest::test nf-2.2 {NF mode crop 2} \
             -setup $setup \
@@ -770,7 +819,7 @@ namespace eval ::sqawk::tests {
                 -MNF crop \
                 -output tcl \
                 {select * from a} $nf2File
-    } -result {{1 4 {A B C D} A B C} {2 4 {A B C} A B C} {3 3 {A B} A B {}}}
+    } -result {{1 3 {A B C D} A B C} {2 3 {A B C} A B C} {3 2 {A B} A B {}}}
 
     tcltest::test nf-2.3 {NF mode crop 2} \
             -setup $setup \
@@ -783,7 +832,7 @@ namespace eval ::sqawk::tests {
                 -output tcl \
                 {select * from a} $nf2File
     } -result \
-        {{1 5 {A B C D} A B C D} {2 4 {A B C} A B C {}} {3 3 {A B} A B {} {}}}
+        {{1 4 {A B C D} A B C D} {2 3 {A B C} A B C {}} {3 2 {A B} A B {} {}}}
 
     tcltest::test nf-3.1 {NF mode expand} \
             -setup $setup \
@@ -796,7 +845,7 @@ namespace eval ::sqawk::tests {
                 -output tcl \
                 {select * from a} $nf1File
     } -result \
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
     tcltest::test nf-3.2 {NF mode expand} \
             -setup $setup \
@@ -809,7 +858,7 @@ namespace eval ::sqawk::tests {
                 -output tcl \
                 {select * from a} $nf1File
     } -result \
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
     tcltest::test nf-3.3 {NF mode expand} \
             -setup $setup \
@@ -822,7 +871,7 @@ namespace eval ::sqawk::tests {
                 -output tcl \
                 {select * from a} $nf1File
     } -result \
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
     tcltest::test nf-3.4 {NF mode expand} \
             -setup $setup \
@@ -835,7 +884,7 @@ namespace eval ::sqawk::tests {
                 -output tcl \
                 {select * from a} $nf1File
     } -result \
-        {{1 3 {A B} A B {} {}} {2 4 {A B C} A B C {}} {3 5 {A B C D} A B C D}}
+        {{1 2 {A B} A B {} {}} {2 3 {A B C} A B C {}} {3 4 {A B C D} A B C D}}
 
     tcltest::test nf-4.1 {NF mode normal} \
             -setup $setup \

@@ -9,7 +9,7 @@ namespace eval ::sqawk {}
     option -database
     option -dbtable
     option -columnprefix
-    option -startf
+    option -f0 true
     option -maxnf
     option -modenf {}
     option -header -validatemethod Check-header -default {}
@@ -42,9 +42,7 @@ namespace eval ::sqawk {}
     # "INTEGER" otherwise.
     method column-datatype i {
         set customColDatatype [lindex [$self cget -datatypes] $i-1]
-        if {$i == 0} {
-            return TEXT
-        } elseif {$customColDatatype ne ""} {
+        if {$customColDatatype ne ""} {
             return $customColDatatype
         } else {
             return INTEGER
@@ -58,13 +56,14 @@ namespace eval ::sqawk {}
         set command {
             CREATE TABLE [$self cget -dbtable] (
                 ${colPrefix}nr INTEGER PRIMARY KEY,
-                ${colPrefix}nf INTEGER,
-                [join $fields ","]
+                ${colPrefix}nf INTEGER
+                [join [list {} {*}$fields] ,]
             )
         }
-        set startF [$self cget -startf]
-        set maxNF [$self cget -maxnf]
-        for {set i $startF} {$i <= $maxNF} {incr i} {
+        if {[$self cget -f0]} {
+            lappend fields "[$self column-name 0] TEXT"
+        }
+        for {set i 1} {$i <= [$self cget -maxnf]} {incr i} {
             lappend fields "[$self column-name $i] [$self column-datatype $i]"
         }
         [$self cget -database] eval [subst $command]
@@ -80,7 +79,12 @@ namespace eval ::sqawk {}
         set maxNF [$self cget -maxnf]
         set modeNF [$self cget -modenf]
         set curNF 0
-        set startF [$self cget -startf]
+        set f0 [$self cget -f0]
+        if {$f0} {
+            set startF 0
+        } else {
+            set startF 1
+        }
 
         $db transaction {
             foreach row $rows {
@@ -102,7 +106,7 @@ namespace eval ::sqawk {}
                         set insertValues [list \$nf]
                         for {set i $startF} {$i < $nf} {incr i} {
                             lappend insertColumnNames [$self column-name $i]
-                            lappend insertValues "\$cv($i)"
+                            lappend insertValues \$cv($i)
                         }
 
                         # Expand (alter) table if needed.
@@ -130,6 +134,8 @@ namespace eval ::sqawk {}
                     set cv($i) $field
                     incr i
                 }
+
+                incr nf -1
 
                 $db eval $statement
                 if {$i > $startF} {
