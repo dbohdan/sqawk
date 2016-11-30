@@ -75,27 +75,25 @@ proc ::sqawk::parsers::awk::trim-record {record mode} {
 }
 
 # Return 1 if two lists of ranges have overlapping ranges and 0 otherwise.
+# O(N*M).
 proc ::sqawk::parsers::awk::overlap? {ranges1 ranges2} {
-    set values {}
-    foreach {from to} $ranges1 {
-        for {set i $from} {$i <= $to} {incr i} {
-            lappend values $i
-        }
-    }
-    foreach {from to} $ranges2 {
-        for {set i $from} {$i <= $to} {incr i} {
-            if {$i in $values} {
+    foreach {from1 to1} $ranges1 {
+        foreach {from2 to2} $ranges2 {
+            if {($from1 <= $to2) && ($from2 <= $to1)} {
                 return 1
             }
         }
     }
+
     return 0
 }
 
 # Merge fields in $mergeRanges and remove those in $skipRanges provided the two
-# lists of ranges do not overlap.
-proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges} {
-    if {[::sqawk::parsers::awk::overlap? $skipRanges $mergeRanges]} {
+# lists of ranges do not overlap. (The check can be disabled at your own risk.)
+proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges
+        {checkOverlap 1}} {
+    if {$checkOverlap &&
+            [::sqawk::parsers::awk::overlap? $skipRanges $mergeRanges]} {
         error {skip and merge ranges overlap;\
                 can't skip and merge the same field}
     }
@@ -155,7 +153,7 @@ proc ::sqawk::parsers::awk::parse {data options} {
     set records [::textutil::splitx $data $RS]
     # Remove final record if empty (typically due to a newline at the end of
     # the file).
-    if {[lindex $records end] eq ""} {
+    if {[lindex $records end] eq {}} {
         set records [lrange $records 0 end-1]
     }
 
@@ -172,12 +170,19 @@ proc ::sqawk::parsers::awk::parse {data options} {
                 $skipRanges]
         set mergeRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
                 $mergeRanges]
+        if {[::sqawk::parsers::awk::overlap? \
+                $skipRangesFromZero $mergeRangesFromZero]} {
+            error {skip and merge ranges overlap;\
+                    can't skip and merge the same field}
+        }
+
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
             set columns [::sqawk::parsers::awk::skipmerge \
                     [::sqawk::parsers::awk::sepsplit $record $FS] \
                     $skipRangesFromZero \
-                    $mergeRangesFromZero]
+                    $mergeRangesFromZero \
+                    0]
             lappend rows [list $record {*}$columns]
         }
     }
