@@ -80,8 +80,6 @@ namespace eval ::sqawk {}
         set maxNF [$self cget -maxnf]
         set modeNF [$self cget -modenf]
         set curNF 0
-        set insertColumnNames [list "${colPrefix}nf"]
-        set insertValues [list {$nf}]
         set startF [$self cget -startf]
 
         $db transaction {
@@ -93,38 +91,37 @@ namespace eval ::sqawk {}
                     set nf [llength [set row [lrange $row 0 $maxNF]]]
                 }
 
-                # Prepare the command. If the current row contains more fields
-                # than exist alter the table adding columns.
-                if {$nf != $curNF &&
-                        [catch {set stat $rowInsertCommand($nf)}]} {
-                    if {$curNF < $nf} {
-                        set i $startF
-                        while {$i < $nf} {
+                # Prepare the statement unless it's already been prepared and
+                # cached. If the current row contains more fields than exist
+                # alter the table adding columns.
+                if {$nf != $curNF} {
+                    if {[info exists rowInsertCommand($nf)]} {
+                        set statement $rowInsertCommand($nf)
+                    } else {
+                        set insertColumnNames [list ${colPrefix}nf]
+                        set insertValues [list \$nf]
+                        for {set i $startF} {$i < $nf} {incr i} {
                             lappend insertColumnNames [$self column-name $i]
                             lappend insertValues "\$cv($i)"
-                            incr i
                         }
-                    } else {
-                        set insertColumnNames \
-                                [lrange $insertColumnNames $startF $nf]
-                        set insertValues \
-                                [lrange $insertValues $startF $nf]
-                    }
-                    # Expand (alter) table if needed.
-                    if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
-                        for {set i $maxNF; incr i} {$i < $nf} {incr i} {
-                            $db eval "ALTER TABLE $tableName ADD COLUMN
-                                    [$self column-name $i]
-                                    [$self column-datatype $i]"
+
+                        # Expand (alter) table if needed.
+                        if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
+                            for {set i $maxNF; incr i} {$i < $nf} {incr i} {
+                                $db eval "ALTER TABLE $tableName ADD COLUMN
+                                        [$self column-name $i]
+                                        [$self column-datatype $i]"
+                            }
+                            $self configure -maxnf [set maxNF [incr i -1]]
                         }
-                        $self configure -maxnf [set maxNF [incr i -1]]
+                        set curNF $nf
+
+                        # Create a prepared statement.
+                        set statement [set rowInsertCommand($curNF) "
+                        INSERT INTO $tableName ([join $insertColumnNames ,])
+                        VALUES ([join $insertValues ,])
+                        "]
                     }
-                    set curNF $nf
-                    # Create a prepared statement (will be cached by "eval").
-                    set stat [set rowInsertCommand($curNF) "
-                    INSERT INTO $tableName ([join $insertColumnNames ,])
-                    VALUES ([join $insertValues ,])
-                    "]
                 }
 
                 # Put fields into the array cv.
@@ -133,8 +130,8 @@ namespace eval ::sqawk {}
                     set cv($i) $field
                     incr i
                 }
-                #if {$startF==1} { puts stderr $stat }
-                $db eval $stat
+
+                $db eval $statement
                 unset cv
             }
         }
