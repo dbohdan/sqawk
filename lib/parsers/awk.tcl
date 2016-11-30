@@ -119,7 +119,7 @@ proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges} {
         set prevSep $sep
         incr i
     }
-    if {$merge == 2} {
+    if {[info exists merge] && $merge == 2} {
         lset columns end [lindex $columns end]$prevSep
     }
 
