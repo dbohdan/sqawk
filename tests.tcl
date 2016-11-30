@@ -230,7 +230,24 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a from a} header=1 columns= $header3File
     } -result b\nc
 
-    tcltest::test skip-and-merge-1.1 {::sqawk::parsers::awk::in-range?} \
+    tcltest::test skip-and-merge-1.1 {::sqawk::parsers::awk::valid-range?} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::valid-range? 0 1]
+        lappend result [::sqawk::parsers::awk::valid-range? -5 1]
+        lappend result [::sqawk::parsers::awk::valid-range? 1 0]
+        lappend result [::sqawk::parsers::awk::valid-range? 5 end]
+        lappend result [::sqawk::parsers::awk::valid-range? end 5]
+        lappend result [::sqawk::parsers::awk::valid-range? start end]
+        lappend result [::sqawk::parsers::awk::valid-range? start 5]
+        lappend result [::sqawk::parsers::awk::valid-range? blah blah]
+        lappend result [::sqawk::parsers::awk::valid-range? 999 9999]
+    } -result {1 0 0 1 0 0 0 0 1}
+
+    tcltest::test skip-and-merge-1.2 {::sqawk::parsers::awk::in-range?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -242,9 +259,12 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::in-range? 0 {0 0}]
         lappend result [::sqawk::parsers::awk::in-range? 0 {1 1}]
         lappend result [::sqawk::parsers::awk::in-range? 1 {0 0}]
-    } -result {0 3 2 1 0 0}
+        lappend result [::sqawk::parsers::awk::in-range? 3 {5 end}]
+        lappend result [::sqawk::parsers::awk::in-range? 5 {5 end}]
+        lappend result [::sqawk::parsers::awk::in-range? 7 {5 end}]
+    } -result {0 3 2 1 0 0 0 1 2}
 
-    tcltest::test skip-and-merge-1.2 {::sqawk::parsers::awk::overlap?} \
+    tcltest::test skip-and-merge-1.3 {::sqawk::parsers::awk::overlap?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -255,7 +275,10 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::overlap? {0 9} {1 2}]
         lappend result [::sqawk::parsers::awk::overlap? {0 0} {0 0}]
         lappend result [::sqawk::parsers::awk::overlap? {0 99} {0 54}]
-    } -result {0 1 1 1 1}
+        lappend result [::sqawk::parsers::awk::overlap? {0 end} {0 54}]
+        lappend result [::sqawk::parsers::awk::overlap? {0 end} {99 end}]
+        lappend result [::sqawk::parsers::awk::overlap? {0 3} {5 end}]
+    } -result {0 1 1 1 1 1 1 0}
 
     tcltest::test skip-and-merge-2.1 {::sqawk::parsers::awk::skipmerge} \
             -setup $setup \
@@ -266,6 +289,8 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::skipmerge \
                 {start AB foo AB bar {}} {} {0 99}]
         lappend result [::sqawk::parsers::awk::skipmerge \
+                {start AB foo AB bar {}} {} {0 end}]
+        lappend result [::sqawk::parsers::awk::skipmerge \
                 {start AB foo AB bar {}} {} {0 1}]
         lappend result [::sqawk::parsers::awk::skipmerge \
                 {start AB foo AB bar {}} {} {4 5}]
@@ -273,7 +298,7 @@ namespace eval ::sqawk::tests {
                 {start AB foo AB bar {}} {} {0 0 1 1 2 2}]
         lappend result [::sqawk::parsers::awk::skipmerge \
                 {start AB foo AB bar {}} {} {0 0 1 2 2 2}]
-    } -result {startABfooABbar {startABfoo bar} {start foo bar}\
+    } -result {startABfooABbar startABfooABbar {startABfoo bar} {start foo bar}\
             {start foo bar} {start fooABbar}}
 
     tcltest::test skip-and-merge-2.2 {::sqawk::parsers::awk::skipmerge} \

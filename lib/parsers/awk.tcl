@@ -74,6 +74,16 @@ proc ::sqawk::parsers::awk::trim-record {record mode} {
     return $record
 }
 
+# Return 1 if $from-$to is a valid field range and 0 otherwise.
+proc ::sqawk::parsers::awk::valid-range? {from to} {
+    return [expr {
+        [string is integer -strict $from] &&
+        (0 <= $from) &&
+        (($to eq {end}) || [string is integer -strict $to]) &&
+        ($from <= $to)
+    }]
+}
+
 # Return 1 if two lists of ranges have overlapping ranges and 0 otherwise.
 # O(N*M).
 proc ::sqawk::parsers::awk::overlap? {ranges1 ranges2} {
@@ -127,14 +137,14 @@ proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges
 # Takes a range string like {1-2,3-4,5-6} or {1 2 3 4 5 6} and returns a list
 # like {0 1 2 3 4 5}.
 proc ::sqawk::parsers::awk::normalizeRanges ranges {
-    set rangeRegexp {[0-9]+-[0-9]+}
-    set overallRegexp "^(?:$rangeRegexp,)*$rangeRegexp\$"
+    set rangeRegexp {[0-9]+-(end|[0-9]+)}
+    set overallRegexp ^(?:$rangeRegexp,)*$rangeRegexp\$
     if {[regexp $overallRegexp $ranges]} {
         set ranges [string map {- { } , { }} $ranges]
     }
     set rangesFromZero {}
     foreach x $ranges {
-        lappend rangesFromZero [expr {$x - 1}]
+        lappend rangesFromZero [expr {$x eq {end} ? $x : $x - 1}]
     }
     return $rangesFromZero
 }
