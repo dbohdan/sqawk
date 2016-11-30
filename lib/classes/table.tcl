@@ -132,7 +132,9 @@ namespace eval ::sqawk {}
                 }
 
                 $db eval $statement
-                unset cv
+                if {$i > $startF} {
+                    unset cv
+                }
             }
         }
     }
