@@ -9,8 +9,7 @@ namespace eval ::sqawk::parsers::awk {
     variable options {
         FS {}
         RS {}
-        merge {}
-        skip {}
+        fields auto
         trim none
     }
 }
@@ -84,69 +83,68 @@ proc ::sqawk::parsers::awk::valid-range? {from to} {
     }]
 }
 
-# Return 1 if two lists of ranges have overlapping ranges and 0 otherwise.
-# O(N*M).
-proc ::sqawk::parsers::awk::overlap? {ranges1 ranges2} {
-    foreach {from1 to1} $ranges1 {
-        foreach {from2 to2} $ranges2 {
-            if {($from1 <= $to2) && ($from2 <= $to1)} {
-                return 1
-            }
-        }
-    }
-
-    return 0
-}
-
-# Merge fields in $mergeRanges and remove those in $skipRanges provided the two
-# lists of ranges do not overlap. (The check can be disabled at your own risk.)
-proc ::sqawk::parsers::awk::skipmerge {fieldsAndSeps skipRanges mergeRanges
-        {checkOverlap 1}} {
-    if {$checkOverlap &&
-            [::sqawk::parsers::awk::overlap? $skipRanges $mergeRanges]} {
-        error {skip and merge ranges overlap;\
-                can't skip and merge the same field}
-    }
+# Return a list of columns.
+# The format of $fieldsAndSeps is {field1 sep1 field2 sep2 ...}.
+# The format of $fieldMap is {range1 range2 ... rangeN ?"auto"?}.
+# For each field range in $fieldMap add an item to the list that consists of
+# the merged contents of the fields in $fieldsAndSeps that fall into this range.
+# E.g., for the range {1 5} an item with the contents of fields 1 through 5 (and
+# the separators between them) will be added. The string "auto" as rangeN in
+# $fieldMap causes [map] to add one column per field for every field in
+# $fieldsAndSeps starting with fieldN and then return immediately.
+proc ::sqawk::parsers::awk::map {fieldsAndSeps fieldMap} {
     set columns {}
-    set i 0
-    set prevSep {}
-    foreach {field sep} $fieldsAndSeps {
-        set skip [::sqawk::parsers::awk::in-range? $i $skipRanges]
-        set merge [::sqawk::parsers::awk::in-range? $i $mergeRanges]
-        if {$skip} {
-            # Skipping.
-        } elseif {$merge > 1} {
-            if {$columns eq {}} {
-                lappend columns {}
+    set currentColumn 0
+    foreach mapping $fieldMap {
+        if {$mapping eq {auto}} {
+            foreach {field _} [lrange $fieldsAndSeps \
+                    [expr {$currentColumn*2}] end] {
+                lappend columns $field
             }
-            lset columns end [lindex $columns end]${prevSep}$field
+            break
+        } elseif {[regexp {^[0-9]+\s+(?:end|[0-9]+)$} $mapping]} {
+            lassign $mapping from to
+            set from [expr {($from - 1)*2}]
+            if {$to ne {end}} {
+                set to [expr {($to - 1)*2}]
+            }
+            lappend columns [join [lrange $fieldsAndSeps $from $to] {}]
         } else {
-            lappend columns $field
+            error "unknown mapping: \"$mapping\""
         }
 
-        set prevSep $sep
-        incr i
-    }
-    if {[info exists merge] && $merge == 2} {
-        lset columns end [lindex $columns end]$prevSep
+        incr currentColumn
     }
 
     return $columns
 }
 
-# Takes a range string like {1-2,3-4,5-6} or {1 2 3 4 5 6} and returns a list
-# like {0 1 2 3 4 5}.
-proc ::sqawk::parsers::awk::normalizeRanges ranges {
-    set rangeRegexp {[0-9]+-(end|[0-9]+)}
-    set overallRegexp ^(?:$rangeRegexp,)*$rangeRegexp\$
-    if {[regexp $overallRegexp $ranges]} {
-        set ranges [string map {- { } , { }} $ranges]
+# Parse a string like 1,2,3-5,auto into a list where each item is either a
+# field range or the string "auto".
+proc ::sqawk::parsers::awk::parseFieldMap fields {
+    set itemRegExp {(auto|([0-9]+)(?:-(end|[0-9]+))?)}
+    set ranges {}
+    set start 0
+    set length [string length $fields]
+    while {($start < $length - 1) &&
+            [regexp -indices -start $start ${itemRegExp}(,|$) $fields \
+                    overall item rangeFrom rangeTo]} {
+        set item [string range $fields {*}$item]
+
+        if {$item eq {auto}} {
+            lappend ranges auto
+        } elseif {[string is integer -strict $item]} {
+            lappend ranges [list $item $item]
+        } elseif {($rangeFrom ne {-1 -1}) && ($rangeTo ne {-1 -1})} {
+            lappend ranges [list \
+                    [string range $fields {*}$rangeFrom] \
+                    [string range $fields {*}$rangeTo]]
+        } else {
+            error "can't parse item \"$item\""
+        }
+        lassign $overall _ start
     }
-    set rangesFromZero {}
-    foreach x $ranges {
-        lappend rangesFromZero [expr {$x eq {end} ? $x : $x - 1}]
-    }
-    return $rangesFromZero
+    return $ranges
 }
 
 # Convert raw text data into a list of database rows using regular
@@ -155,8 +153,7 @@ proc ::sqawk::parsers::awk::parse {data options} {
     # Parse $args.
     set RS [dict get $options RS]
     set FS [dict get $options FS]
-    set skipRanges [dict get $options skip]
-    set mergeRanges [dict get $options merge]
+    set fields [dict get $options fields]
     set trim [dict get $options trim]
 
     # Split the raw data into records.
@@ -170,29 +167,17 @@ proc ::sqawk::parsers::awk::parse {data options} {
 
     # Split records into fields.
     set rows {}
-    if {($skipRanges eq {}) && ($mergeRanges eq {})} {
+    if {($fields eq {auto})} {
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
             lappend rows [list $record {*}[::textutil::splitx $record $FS]]
         }
     } else {
-        set skipRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
-                $skipRanges]
-        set mergeRangesFromZero [::sqawk::parsers::awk::normalizeRanges \
-                $mergeRanges]
-        if {[::sqawk::parsers::awk::overlap? \
-                $skipRangesFromZero $mergeRangesFromZero]} {
-            error {skip and merge ranges overlap;\
-                    can't skip and merge the same field}
-        }
-
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
-            set columns [::sqawk::parsers::awk::skipmerge \
+            set columns [::sqawk::parsers::awk::map \
                     [::sqawk::parsers::awk::sepsplit $record $FS] \
-                    $skipRangesFromZero \
-                    $mergeRangesFromZero \
-                    0]
+                    [::sqawk::parsers::awk::parseFieldMap $fields]]
             lappend rows [list $record {*}$columns]
         }
     }

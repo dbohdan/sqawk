@@ -230,7 +230,7 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a from a} header=1 columns= $header3File
     } -result b\nc
 
-    tcltest::test skip-and-merge-1.1 {::sqawk::parsers::awk::valid-range?} \
+    tcltest::test field-mapping-1.1 {::sqawk::parsers::awk::valid-range?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -247,7 +247,7 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::valid-range? 999 9999]
     } -result {1 0 0 1 0 0 0 0 1}
 
-    tcltest::test skip-and-merge-1.2 {::sqawk::parsers::awk::in-range?} \
+    tcltest::test field-mapping-1.2 {::sqawk::parsers::awk::in-range?} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
@@ -264,193 +264,165 @@ namespace eval ::sqawk::tests {
         lappend result [::sqawk::parsers::awk::in-range? 7 {5 end}]
     } -result {0 3 2 1 0 0 0 1 2}
 
-    tcltest::test skip-and-merge-1.3 {::sqawk::parsers::awk::overlap?} \
+    tcltest::test field-mapping-1.3 {::sqawk::parsers::awk::parseFieldMap} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
-        lappend result [::sqawk::parsers::awk::overlap? {0 0} {1 1}]
-        lappend result [::sqawk::parsers::awk::overlap? {1 2} {0 9}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 9} {1 2}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 0} {0 0}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 99} {0 54}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 end} {0 54}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 end} {99 end}]
-        lappend result [::sqawk::parsers::awk::overlap? {0 3} {5 end}]
-    } -result {0 1 1 1 1 1 1 0}
+        lappend result [::sqawk::parsers::awk::parseFieldMap auto]
+        lappend result [::sqawk::parsers::awk::parseFieldMap 1,2]
+        lappend result [::sqawk::parsers::awk::parseFieldMap 1,1-2,3,5-end]
+        } -result [list \
+            auto \
+            {{1 1} {2 2}} \
+            {{1 1} {1 2} {3 3} {5 end}} \
+    ]
 
-    tcltest::test skip-and-merge-2.1 {::sqawk::parsers::awk::skipmerge} \
+    tcltest::test field-mapping-2.1 {::sqawk::parsers::awk::map} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {0 99}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {0 end}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {0 1}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {4 5}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {0 0 1 1 2 2}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar {}} {} {0 0 1 2 2 2}]
-    } -result {startABfooABbar startABfooABbar {startABfoo bar} {start foo bar}\
-            {start foo bar} {start fooABbar}}
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 99}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 end}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 1}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 2}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{4 5}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 1} {2 2} {3 3}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 1} {2 2} {3 end}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {{1 1} {2 3} {3 3}}]
+    } -result [list \
+            startABfooABbar \
+            startABfooABbar \
+            start \
+            startABfoo \
+            {{}} \
+            {start foo bar} \
+            {start foo bar} \
+            {start fooABbar bar} \
+    ]
 
-    tcltest::test skip-and-merge-2.2 {::sqawk::parsers::awk::skipmerge} \
+    tcltest::test field-mapping-2.2 {::sqawk::parsers::awk::map} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar AB} {} {0 99}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar AB} {} {0 1}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar AB} {} {4 5}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar AB} {} {0 0 1 1 2 2}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {start AB foo AB bar AB} {} {0 0 1 2 2 2}]
-    } -result {startABfooABbarAB {startABfoo bar} {start foo bar}\
-            {start foo bar} {start fooABbar}}
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 99}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 end}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 2}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{4 5}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1} {2 2} {3 3}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1} {2 2} {3 end}}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1} {2 3} {3 3}}]
+    } -result [list \
+            startABfooABbarAB \
+            startABfooABbarAB \
+            start \
+            startABfoo \
+            {{}} \
+            {start foo bar} \
+            {start foo barAB} \
+            {start fooABbar bar} \
+    ]
 
-    tcltest::test skip-and-merge-2.3 {::sqawk::parsers::awk::skipmerge} \
+    tcltest::test field-mapping-2.3 {::sqawk::parsers::awk::map auto} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
-        lappend result [::sqawk::parsers::awk::skipmerge \
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar {}} {auto}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {auto}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1} auto}]
+        lappend result [::sqawk::parsers::awk::map \
+                {start AB foo AB bar AB} {{1 1} {2 2} auto}]
+    } -result [list \
+            {start foo bar} \
+            {start foo bar} \
+            {start foo bar} \
+            {start foo bar} \
+    ]
+
+    tcltest::test field-mapping-2.3 {::sqawk::parsers::awk::map} \
+            -setup $setup \
+            -cleanup {unset result} \
+            -body {
+        source -encoding utf-8 sqawk.tcl
+        set result {}
+        lappend result [::sqawk::parsers::awk::map \
                 {foo { } 1 {   } foo { } 2 {   } foo { } 3 {}} \
-                {} \
-                {0 1 2 3 4 5}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
+                {{1 2} {3 4} {5 6}}]
+        lappend result [::sqawk::parsers::awk::map \
                 {bar {    } 4 { } bar {    } 5 { } bar {    } 6 {}} \
-                {} \
-                {0 1 2 3 4 5}]
+                {{1 2} {3 4} {5 6}}]
     } -result {{{foo 1} {foo 2} {foo 3}} {{bar    4} {bar    5} {bar    6}}}
 
-    tcltest::test skip-and-merge-2.4 {::sqawk::parsers::awk::skipmerge} \
+    tcltest::test field-mapping-2.4 {::sqawk::parsers::awk::map} \
             -setup $setup \
             -cleanup {unset result} \
             -body {
         source -encoding utf-8 sqawk.tcl
         set result {}
-        lappend result [::sqawk::parsers::awk::skipmerge \
+        lappend result [::sqawk::parsers::awk::map \
                 {foo { } 1 {   } foo { } 2 {   } foo { } 3 {}} \
-                {0 0 2 2 4 4} \
-                {1 1}]
-        lappend result [::sqawk::parsers::awk::skipmerge \
+                {{2 2} {4 4} {6 6}}]
+        lappend result [::sqawk::parsers::awk::map \
                 {bar {    } 4 { } bar {    } 5 { } bar {    } 6 {}} \
-                {0 0 2 2 4 4} \
-                {3 3}]
+                {{2 2} {4 4} {6 6}}]
     } -result {{1 2 3} {4 5 6}}
-
-    tcltest::test skip-and-merge-2.5 {::sqawk::parsers::awk::skipmerge} \
-            -setup $setup \
-            -cleanup {unset result} \
-            -body {
-        source -encoding utf-8 sqawk.tcl
-        set result {}
-        lappend result [::sqawk::parsers::awk::skipmerge \
-                {foo { } bar} \
-                {0 1} \
-                {0 2}]
-    } -returnCodes 1 -result {skip and merge ranges overlap;\
-                              can't skip and merge the same field}
-
-    tcltest::test skip-and-merge-3.1 {::sqawk::parsers::awk::sepsplit and skipmerge} \
-            -setup $setup \
-            -cleanup {unset fs result} \
-            -body {
-        source -encoding utf-8 sqawk.tcl
-        set result {}
-        set lambda {
-            {from to {sep AB}} {
-                set startingList [list start u v w x y z tail]
-                set result {}
-                lappend result [lrange $startingList 0 $from-1]
-                lappend result [join [lrange $startingList $from $to] $sep]
-                lappend result [lrange $startingList $to+1 end]
-                return [string trim [join $result { }] { }]
-            }
-        }
-        for {set i 0} {$i < 20} {incr i} {
-            for {set j 0} {$j <= $i} {incr j} {
-                set fs [::sqawk::parsers::awk::sepsplit \
-                        startABuABvABwABxAByABzABtail {AB}]
-                set literalSplit [::sqawk::parsers::awk::skipmerge \
-                        $fs {} [list $j $i]]
-                set fs [::sqawk::parsers::awk::sepsplit \
-                        startABuABvABwABxAByABzABtail {(AB?)+}]
-                set regexpSplit [::sqawk::parsers::awk::skipmerge \
-                        $fs {} [list $j $i]]
-                set correct [apply $lambda $j $i]
-                set match [expr {
-                    ($literalSplit eq $correct) && ($regexpSplit eq $correct)
-                }]
-                lappend result $match
-            }
-        }
-
-        return [lsort -unique $result]
-    } -result 1
 
     variable merge2File [make-temp-file \
             "foo 1   foo 2   foo 3\nbar    4 bar    5 bar    6\n"]
 
-    tcltest::test skip-and-merge-4.1 {merge option} \
+    tcltest::test field-mapping-3.1 {merge fields} \
             -setup $setup \
             -body {
         variable merge2File
         sqawk-tcl -OFS - {
             select a1, a2, a3 from a
-        } {merge=1-2,3-4,5-6} $merge2File
+        } {fields=1-2,3-4,5-6} $merge2File
     } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
 
-    tcltest::test skip-and-merge-4.2 {merge option alt syntax} \
-            -setup $setup \
-            -body {
-        variable merge2File
-        sqawk-tcl -OFS - {
-            select a1, a2, a3 from a
-        } {merge=1 2 3 4 5 6} $merge2File
-    } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
-
-    tcltest::test skip-and-merge-4.3 {merge option with field order not sorted} \
-            -setup $setup \
-            -body {
-        variable merge2File
-        sqawk-tcl -OFS - {
-            select a1, a2, a3 from a
-        } {merge=5 6 1 2 3 4} $merge2File
-    } -result "foo 1-foo 2-foo 3\nbar    4-bar    5-bar    6"
-
-    tcltest::test skip-and-merge-4.4 {skip option} \
+    tcltest::test field-mapping-3.2 {skip fields} \
             -setup $setup \
             -body {
         variable merge2File
         sqawk-tcl -OFS - {
             select a1, a2 from a
-        } {skip=2 5} $merge2File
+        } {fields=3,6} $merge2File
     } -result "foo-3\nbar-6"
 
-
-    tcltest::test skip-and-merge-4.5 {skip and merge option} \
+    tcltest::test field-mapping-3.3 {skip and merge fields} \
             -setup $setup \
             -body {
         variable merge2File
         sqawk-tcl -OFS - {
             select a1, a2 from a
-        } {skip=3 4} {merge=1 2 5 6} $merge2File
+        } {fields=1-2,5-6} $merge2File
     } -result "foo 1-foo 3\nbar    4-bar    6"
-
 
     tcltest::test format-1.1 {CSV input} \
             -constraints utf8 \

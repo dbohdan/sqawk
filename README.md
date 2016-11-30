@@ -81,9 +81,7 @@ These options are set before a filename and only affect one input source.
 | datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns, starting with `a1` if your table is named `a`. The datatype for each column for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
 | format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
-| merge | `merge=1-2,3-5`, `'merge=1 2 3 5'` | Merge fields with the given numbers into one preserving the separator characters between them. |
 | prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
-| skip | `skip=1-1,3-5`, `'skip=1 1 3 5'` | Do not insert the fields in the given ranges into the table. If your table has columns `a1`, `a2`, `a3`, etc. and you skip fields 2 through 4 then the contents of field 5 will go into column `a2`, the contents of field 6 into `a3`, etc. |
 | table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | F0 | `F0=no`, `F0=1` | Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. Enable the zeroth column of the table that stores input lines verbatim. Disabling this column can save memory. |
 | NF | `NF=20` | Same as -NF but for one file. |
@@ -95,7 +93,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
-| `awk` or `raw` | `FS`, `RS`, `trim` | `RS=\n`, `FS=:`, `trim=left` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or none (`trim=none`). |
+| `awk` or `raw` | `FS`, `RS`, `trim`, `fields` | `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or none (`trim=none`). |
 | `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl-lang.org/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
 
 # More examples
