@@ -39,7 +39,7 @@ Sqawk allows you to be verbose to better document your script but aims to provid
 
 A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 dialect of SQL.
 
-The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any one file with a file option. The table name is used as a prefix in its fields' names; the fields are named `a1`, `a2`, etc. in the table `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
+The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any one file with a file option. The table name is used as a prefix in its columns' names; by default, the columns are named `a1`, `a2`, etc. in the table `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
 
 ## Options
 
@@ -49,12 +49,12 @@ These options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| -FS value | `-FS '[ \t]+'` | Input field separator for the default parser (one for all input files). |
-| -RS value | `-RS '\n'` | Input record separator for the default parser (one for all input files). |
-| -OFS value | `-OFS ' '` | Output field separator for the default serializer. |
-| -ORS value | `-ORS '\n'` | Output record separator for the default serializer. |
-| -NF value | `-NF 10` | The maximum number of fields per record. Increase this if you get errors like `table x has no column named x51` (`MNF=error` only). |
-| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF normal` | The NF mode used if a record exceed the maximum number of fields: `expand` means to increase `NF` automatically and expand (alter) the table during import if the record contains more fields than available; `crop` means truncate the record to `NF` fields (fields after that will be not imported); `error` makes Sqawk produce an error like `table x has no column named x11`. |
+| -FS value | `-FS '[ \t]+'` | The input field separator for the default parser (one for all input files). |
+| -RS value | `-RS '\n'` | The input record separator for the default parser (one for all input files). |
+| -OFS value | `-OFS ' '` | The output field separator for the default serializer. |
+| -ORS value | `-ORS '\n'` | The output record separator for the default serializer. |
+| -NF value | `-NF 10` | The maximum number of fields per record. The corresponding number of columns is added to the target table at the start (e.g., `a0`, `a1`, ..., `a10` for ten fields). Increase this if you get errors like `table x has no column named x51` with `MNF` set to `error`. |
+| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF error` | The NF mode used if a record exceeds the maximum number of fields: `expand`, the default, will increase `NF` automatically and add columns to the table during import if the record contains more fields than available; `crop` will truncate the record to `NF` fields (i.e., the fields for which there aren't enough table columns will not be imported); `error` makes Sqawk quit with an error message like `table x has no column named x11`. |
 | -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
@@ -77,12 +77,12 @@ These options are set before a filename and only affect one input source.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Set custom column names for the next file. If there are more columns than custom names the columns after the last one with a custom name will be named automatically in the same manner as for the option `header=1`. Custom column names override names taken from the header. If you give a column an empty name it will be named automatically or retain the name from the header. |
+| columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Set the custom column names for the next file. If there are more columns than custom names the columns after the last one with a custom name will be named automatically in the same manner as for the option `header=1`. Custom column names override names taken from the header. If you give a column an empty name it will be named automatically or will retain its name from the header. |
 | datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns, starting with `a1` if your table is named `a`. The datatype for each column for which the datatype is not explicitly given is `INTEGER`. The datatype of `a0` is always `TEXT`. |
 | format | `format=csv csvsep=;` | Set the input format for the next source of input. See [Input formats](#input-formats). |
 | header | `header=1` | Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. Use the first row of the file as a source of column names. If the first row has five fields then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
-| prefix | `prefix=x` | Column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
-| table | `table=foo` | Table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
+| prefix | `prefix=x` | The column name prefix in the table. Defaults to the table name. Specifying `table=foo` and `prefix=bar` will lead to you being able to use queries like `select bar1, bar2 from foo`.  |
+| table | `table=foo` | The table name. By default tables are named `a`, `b`, `c`, ... Specifying `table=foo` for the second file only will result in tables having the names `a`, `foo`, `c`, ...  |
 | F0 | `F0=no`, `F0=1` | Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. Enable the zeroth column of the table that stores input lines verbatim. Disabling this column can save memory. |
 | NF | `NF=20` | Same as -NF but for one file. |
 | MNF | `MNF=crop` | Same as -MNF but for one file (table). |
