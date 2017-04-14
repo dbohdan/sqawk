@@ -30,6 +30,4 @@ test: sqawk
 uninstall:
 	rm $(DESTDIR)$(bindir)/sqawk
 
-.POSIX:
-
-.PHONY: install installdirs sqawk test uninstall .POSIX
+.PHONY: install installdirs sqawk test uninstall
