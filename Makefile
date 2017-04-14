@@ -27,6 +27,9 @@ sqawk:
 test: sqawk
 	tclsh tests.tcl
 
+uninstall:
+	rm $(DESTDIR)$(bindir)/sqawk
+
 .POSIX:
 
-.PHONY: install installdirs sqawk test .POSIX
+.PHONY: install installdirs sqawk test uninstall .POSIX
