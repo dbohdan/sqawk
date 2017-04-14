@@ -311,6 +311,4 @@ or on Windows
 
 MIT.
 
-`lib/parsers/awk.tcl` contains code derived from Tcllib, which is licensed under the standard Tcl license. See `LICENSE.Tcllib`.
-
 `squawk.jpg` photograph by [Terry Foote](https://en.wikipedia.org/wiki/User:Terry_Foote) at [English Wikipedia](https://en.wikipedia.org/wiki/). It is licensed under [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/).
