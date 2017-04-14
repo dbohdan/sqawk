@@ -68,7 +68,7 @@ The following are the possible values for the command line option `-output`. The
 | awk | none | `-output awk` | The `awk` serializer behaves similarly to Awk. When it is selected Sqawk outputs each column of each of the database rows returned by your query separated from the next with the output field separator (-OFS); the rows themselves are in turn separated with the output record separator (-ORS). |
 | csv | none | `-output csv` | Output CSV. |
 | json | `arrays` (defaults to `0`), `indent` (defaults to `0`) | `-output json,indent=0,arrays=1` | Output the result of the query as JSON. If `arrays` is `0` result is an array of JSON objects with the column names as keys; if `arrays` is `1` the result is an array of arrays. The values are all represented as strings in either case. If `indent` is `1` each object will be indented for readability. |
-| table | `alignments` or `align`, `margins`, `style` | `-output table,align=center left right`, `-output table,alignments=c l r` | Output plain text tables. The `table` serializer uses [Tabulate](http://tcl.wiki/41682) to format the output as a table using box-drawing characters. Note that the default Unicode table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. Use `style=loFi` to draw tables with plain ASCII characters instead. |
+| table | `alignments` or `align`, `margins`, `style` | `-output table,align=center left right`, `-output table,alignments=c l r` | Output plain text tables. The `table` serializer uses [Tabulate](https://tcl.wiki/41682) to format the output as a table using box-drawing characters. Note that the default Unicode table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. Use `style=loFi` to draw tables with plain ASCII characters instead. |
 | tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 
 ### Per-file options
@@ -286,9 +286,9 @@ On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
     sudo pkg install tcl86 tcllib tcl-sqlite3
     sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
 
-On **Windows** the easiest option is to install [ActiveTcl](http://www.activestate.com/activetcl/downloads) from ActiveState.
+On **Windows** the easiest option is to install [ActiveTcl](https://www.activestate.com/activetcl/downloads) from ActiveState.
 
-On **OS X** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](http://www.activestate.com/activetcl/downloads) for Mac. With MacPorts:
+On **OS X** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](https://www.activestate.com/activetcl/downloads) for Mac. With MacPorts:
 
     sudo port install tcllib tcl-sqlite3
 
@@ -311,4 +311,4 @@ or on Windows
 
 MIT.
 
-`squawk.jpg` photograph by [Terry Foote](https://en.wikipedia.org/wiki/User:Terry_Foote) at [English Wikipedia](https://en.wikipedia.org/wiki/). It is licensed under [CC BY-SA 3.0](http://creativecommons.org/licenses/by-sa/3.0/).
+`squawk.jpg` photograph by [Terry Foote](https://en.wikipedia.org/wiki/User:Terry_Foote) at [English Wikipedia](https://en.wikipedia.org/wiki/). It is licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
