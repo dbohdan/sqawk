@@ -448,6 +448,32 @@ namespace eval ::sqawk::tests {
         } format=csvalt {csvsep=;} $filename
     } -result "1-2-Hello, World!\nΑλαμπουρνέζικα-3-4\n5-6-7"
 
+    tcltest::test format-2.1 {Tcl data input} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=tcl << {{1 2 3   4   5       } {6 7 8 9 10}}
+    } -result [format %s\n%s \
+            {1|5|1 2 3   4   5       |1|2|3|4|5|||||} \
+            {2|5|6 7 8 9 10|6|7|8|9|10|||||}]
+
+    tcltest::test format-2.2 {Tcl data input} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -output json {
+            select foo, bar, baz from a
+        } format=tcl dicts=1 header=1 << {{foo 1 bar 2} {foo 3 bar 4 baz 5}}
+    } -result {[{"foo":"1","bar":"2","baz":""},{"foo":"3","bar":"4","baz":"5"}]}
+
+    tcltest::test format-2.3 {Tcl data input} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -OFS \\| -NF 3 {
+            select * from a
+        } format=tcl dicts=1 << {{ b  2} {a   1  }}
+    } -result "1|2|b a|b|a|\n2|2| b  2|2||\n3|2|a   1  ||1|"
+
     tcltest::test output-1.1 {Default output format} \
             -setup $setup \
             -cleanup {unset filename} \

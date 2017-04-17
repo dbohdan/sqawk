@@ -20,6 +20,7 @@ source+ lib/tabulate.tcl
 source+ lib/utils.tcl
 source+ lib/parsers/awk.tcl
 source+ lib/parsers/csv.tcl
+source+ lib/parsers/tcl.tcl
 source+ lib/serializers/awk.tcl
 source+ lib/serializers/csv.tcl
 source+ lib/serializers/json.tcl
