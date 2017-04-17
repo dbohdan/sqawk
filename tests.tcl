@@ -634,8 +634,18 @@ namespace eval ::sqawk::tests {
     tcltest::test empty-fields-1.1 {Empty fields} \
             -setup $setup \
             -body {
-        sqawk-tcl -FS - {select a1, a2 from a} << "0-1\n\na-b\n\nc-d\n"
-    } -result "0 1\n \na b\n \nc d"
+        sqawk-tcl -FS - {
+            select printf("'%s' (%s)(%s)", a0, a1, a2) from a
+        } << "0-1\n\na-b\n\nc-d\n"
+    } -result "'0-1' (0)(1)\n'' ()()\n'a-b' (a)(b)\n'' ()()\n'c-d' (c)(d)"
+
+    tcltest::test empty-fields-1.2 {Empty fields} \
+            -setup $setup \
+            -body {
+        sqawk-tcl -FS - {
+            select printf("'%s' (%s)(%s)", a0, a1, a2) from a
+        } << "\n0-1\n\na-b\n"
+    } -result "'' ()()\n'0-1' (0)(1)\n'' ()()\n'a-b' (a)(b)"
 
     variable emptyLines1File [make-temp-file "\n\n\n\n"]
 

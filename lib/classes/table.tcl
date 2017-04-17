@@ -105,6 +105,8 @@ namespace eval ::sqawk {}
                 # cached. If the current row contains more fields than exist
                 # alter the table adding columns.
                 if {$nf != $curNF} {
+                    set curNF $nf
+
                     if {[info exists rowInsertCommand($nf)]} {
                         set statement $rowInsertCommand($nf)
                     } else {
@@ -124,10 +126,9 @@ namespace eval ::sqawk {}
                             }
                             $self configure -maxnf [set maxNF [incr i -1]]
                         }
-                        set curNF $nf
 
                         # Create a prepared statement.
-                        set statement [set rowInsertCommand($curNF) "
+                        set statement [set rowInsertCommand($nf) "
                         INSERT INTO $tableName ([join $insertColumnNames ,])
                         VALUES ([join $insertValues ,])
                         "]
