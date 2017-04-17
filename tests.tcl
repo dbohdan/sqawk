@@ -632,6 +632,7 @@ namespace eval ::sqawk::tests {
     } -result "1 2\n4 5"
 
     tcltest::test empty-fields-1.1 {Empty fields} \
+            -constraints printfInSqlite3 \
             -setup $setup \
             -body {
         sqawk-tcl -FS - {
@@ -640,6 +641,7 @@ namespace eval ::sqawk::tests {
     } -result "'0-1' (0)(1)\n'' ()()\n'a-b' (a)(b)\n'' ()()\n'c-d' (c)(d)"
 
     tcltest::test empty-fields-1.2 {Empty fields} \
+            -constraints printfInSqlite3 \
             -setup $setup \
             -body {
         sqawk-tcl -FS - {
