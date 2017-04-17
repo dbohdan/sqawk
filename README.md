@@ -37,7 +37,7 @@ Sqawk allows you to be verbose to better document your script but aims to provid
 
 ## SQL
 
-A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 dialect of SQL.
+A Sqawk `script` consist of one of more SQL statements in the SQLite version 3 [dialect](https://www.sqlite.org/lang.html) of SQL.
 
 The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any one file with a file option. The table name is used as a prefix in its columns' names; by default, the columns are named `a1`, `a2`, etc. in the table `a`, `b1`, `b2`, etc. in `b` and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b` and so on contains the record number and is the primary key of its respective table. `anf`, `bnf` and so on contain the field count for a given record.
 
@@ -49,15 +49,15 @@ These options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| -FS value | `-FS '[ \t]+'` | The input field separator for the default parser (one for all input files). |
-| -RS value | `-RS '\n'` | The input record separator for the default parser (one for all input files). |
+| -FS value | `-FS '[ \t]+'` | The input field separator for the default parser (for all input files). |
+| -RS value | `-RS '\n'` | The input record separator for the default parser (for all input files). |
 | -OFS value | `-OFS ' '` | The output field separator for the default serializer. |
 | -ORS value | `-ORS '\n'` | The output record separator for the default serializer. |
-| -NF value | `-NF 10` | The maximum number of fields per record. The corresponding number of columns is added to the target table at the start (e.g., `a0`, `a1`, ..., `a10` for ten fields). Increase this if you get errors like `table x has no column named x51` with `MNF` set to `error`. |
-| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF error` | The NF mode used if a record exceeds the maximum number of fields: `expand`, the default, will increase `NF` automatically and add columns to the table during import if the record contains more fields than available; `crop` will truncate the record to `NF` fields (i.e., the fields for which there aren't enough table columns will not be imported); `error` makes Sqawk quit with an error message like `table x has no column named x11`. |
+| -NF value | `-NF 10` | The maximum number of fields per record. The corresponding number of columns is added to the target table at the start (e.g., `a0`, `a1`, `a2`,&nbsp;...&nbsp;, `a10` for ten fields). Increase this if you get errors like `table x has no column named x51` with `MNF` set to `error`. |
+| -MNF value | `-MNF expand`, `-MNF crop`, `-MNF error` | The NF mode used if a record exceeds the maximum number of fields: `expand`, the default, will increase `NF` automatically and add columns to the table during import if the record contains more fields than available; `crop` will truncate the record to `NF` fields (i.e., the fields for which there aren't enough table columns will be omitted); `error` makes Sqawk quit with an error message like `table x has no column named x11`. |
 | -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
-| -1 | | Do not split records into fields. Same as `-F '^$'`. Allows you to avoid adjusting `-NF` and improves the performance somewhat for when you only want to operate on lines. |
+| -1 | | Do not split records into fields. The same as `-F '^$'`. Improves the performance somewhat for when you only want to operate on whole records (lines). |
 
 #### Output formats
 
@@ -93,14 +93,14 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
-| `awk` or `raw` | `FS`, `RS`, `trim`, `fields` | `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or none (`trim=none`). The option `fields` configures how the fields of the input are mapped to the columns of the corresponding database table. This option lets you discard some of the fields, which can save memory, and to merge the contents of others. For example, `fields=1,2,3-5,auto` tells Sqawk to insert the contents of the first field into the column `a1` (assuming table `a`), the second field into `a2`, the third through the fifth field into `a3` and the rest of the fields starting with the sixth into the columns `a4`, 'a5' and so on, one field per column. If you merge several fields the whitespace between them is preserved. |
-| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables [alternate mode](http://core.tcl-lang.org/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used as `csvquote`. |
+| `awk` or `raw` | `FS`, `RS`, `trim`, `fields` | `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or neither (`trim=none`). The option `fields` configures how the fields of the input are mapped to the columns of the corresponding database table. This option lets you discard some of the fields, which can save memory, and to merge the contents of others. For example, `fields=1,2,3-5,auto` tells Sqawk to insert the contents of the first field into the column `a1` (assuming table `a`), the second field into `a2`, the third through the fifth field into `a3` and the rest of the fields starting with the sixth into the columns `a4`, 'a5' and so on, one field per column. If you merge several fields the whitespace between them is preserved. |
+| `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables the [alternate mode](http://core.tcl-lang.org/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) meant for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used `csvquote`. |
 
 # More examples
 
 ## Sum up numbers
 
-    find . -iname '*.jpg' -type f -printf '%s\n' | sqawk 'select sum(a1)/1024/1024 from a'
+    find . -iname '*.jpg' -type f -printf '%s\n' | sqawk 'select sum(a1)/1024.0/1024 from a'
 
 ## Line count
 
