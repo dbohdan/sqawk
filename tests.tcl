@@ -460,10 +460,12 @@ namespace eval ::sqawk::tests {
 
     tcltest::test format-2.2 {Tcl data input} \
             -setup $setup \
+            -cleanup {unset filename} \
             -body {
+        set filename [make-temp-file {{foo 1 bar 2} {foo 3 bar 4 baz 5}}]
         sqawk-tcl -output json {
             select foo, bar, baz from a
-        } format=tcl dicts=1 header=1 << {{foo 1 bar 2} {foo 3 bar 4 baz 5}}
+        } format=tcl dicts=1 header=1 $filename
     } -result {[{"foo":"1","bar":"2","baz":""},{"foo":"3","bar":"4","baz":"5"}]}
 
     tcltest::test format-2.3 {Tcl data input} \
