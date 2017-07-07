@@ -106,6 +106,49 @@ namespace eval ::sqawk::tests {
                 [llength $lines2]]
     }
 
+    tcltest::test fs-1.1 {Global custom field separator} -setup {
+        init
+    } -body {
+        sqawk-tcl -FS , {
+            select a1, a2 from a
+        } << a,b\nc,d\ne,f\n
+    } -cleanup {
+        uninit
+    } -result "a b\nc d\ne f"
+
+    tcltest::test fs-1.2 {Global custom field separator} -setup {
+        init
+    } -body {
+        sqawk-tcl -FS @ {
+            select a1, a2 from a
+        } << a@b\nc@d\ne@f\n
+    } -cleanup {
+        uninit
+    } -result "a b\nc d\ne f"
+
+    tcltest::test fs-1.3 {Global custom field separator} -setup {
+        init
+    } -body {
+        sqawk-tcl -FS \\| {
+            select distinct a1 as title,a2 as artist from a
+        } << "Yama Yama|Yamasuki\n"
+    } -cleanup {
+        uninit
+    } -result "Yama Yama Yamasuki"
+
+    tcltest::test fs-2.1 {Bad custom field separator regexp} -setup {
+        init
+    } -body {
+        source -encoding utf-8 sqawk.tcl
+        ::sqawk::parsers::awk::parse "Yama Yama|Yamasuki" {
+            FS |    RS \n    fields auto    trim none
+        }
+    } -cleanup {
+        uninit
+    } -returnCodes {
+        error
+    } -result {splitting on regexp "|" would cause infinite loop}
+
     tcltest::test join-1.1 {JOIN on two files from examples/hp/} -setup {
         init filename {}
     } -body {

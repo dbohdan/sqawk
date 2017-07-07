@@ -31,14 +31,18 @@ proc ::sqawk::parsers::awk::in-range? {number rangeList} {
     return 0
 }
 
-# Split $str on separators that match $regexp. Returns the resulting list of
-# fields and the list of separators between them.
-proc ::sqawk::parsers::awk::sepsplit {str regexp} {
+# Split $str on separators that match $regexp. Returns a list consisting of
+# fields and, if $includeSeparators is 1, the separators after each.
+proc ::sqawk::parsers::awk::sepsplit {str regexp {includeSeparators 1}} {
     if {$str eq {}} {
         return {}
     }
     if {$regexp eq {}} {
         return [split $str {}]
+    }
+    # Thanks to KBK for the idea.
+    if {[regexp $regexp {}]} {
+        error "splitting on regexp \"$regexp\" would cause infinite loop"
     }
 
     # Split $str into a list of fields and separators.
@@ -46,16 +50,24 @@ proc ::sqawk::parsers::awk::sepsplit {str regexp} {
     set offset 0
     while {[regexp -start $offset -indices -- $regexp $str match]} {
         lassign $match matchStart matchEnd
-        lappend fieldsAndSeps [string range $str $offset     $matchStart-1]
-        lappend fieldsAndSeps [string range $str $matchStart $matchEnd]
-
+        lappend fieldsAndSeps     [string range $str $offset     $matchStart-1]
+        if {$includeSeparators} {
+            lappend fieldsAndSeps [string range $str $matchStart $matchEnd]
+        }
         set offset [expr {$matchEnd + 1}]
     }
     # Handle the remainder of $str after all the separators.
     set tail [string range $str $offset end]
-    if {$tail ne {}} {
+    if {$tail eq {}} {
+        # $str ended on a separator.
+        if {!$includeSeparators} {
+            lappend fieldsAndSeps {}
+        }
+    } else {
         lappend fieldsAndSeps $tail
-        lappend fieldsAndSeps {}
+        if {$includeSeparators} {
+            lappend fieldsAndSeps {}
+        }
     }
 
     return $fieldsAndSeps
@@ -157,7 +169,7 @@ proc ::sqawk::parsers::awk::parse {data options} {
     set trim [dict get $options trim]
 
     # Split the raw data into records.
-    set records [::textutil::splitx $data $RS]
+    set records [::sqawk::parsers::awk::sepsplit $data $RS 0]
     # Remove final record if empty (typically due to a newline at the end of
     # the file).
     if {[lindex $records end] eq {}} {
@@ -170,7 +182,8 @@ proc ::sqawk::parsers::awk::parse {data options} {
     if {($fields eq {auto})} {
         foreach record $records {
             set record [::sqawk::parsers::awk::trim-record $record $trim]
-            lappend rows [list $record {*}[::textutil::splitx $record $FS]]
+            lappend rows [list $record \
+                    {*}[::sqawk::parsers::awk::sepsplit $record $FS 0]]
         }
     } else {
         foreach record $records {

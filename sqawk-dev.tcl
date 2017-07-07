@@ -6,7 +6,6 @@ package require Tcl 8.5
 package require cmdline
 package require snit 2
 package require sqlite3
-package require textutil
 
 namespace eval ::sqawk {
     variable version 0.21.0
