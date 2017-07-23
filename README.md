@@ -5,6 +5,74 @@
 
 **Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
+
+# An example
+
+Sqawk is invoced as follows:
+
+    sqawk -foo bar script baz=qux filename
+    
+where the `script` is your SQL.
+
+Here is an example of what it can do:
+
+```sh
+# List all login shells used on the system.
+sqawk -ORS '\n' 'select distinct shell from passwd order by shell' FS=: columns=username,password,uid,gui,info,home,shell table=passwd /etc/passwd
+```
+
+or, equivalently,
+
+```sh
+# Do the same thing.
+sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
+```
+
+Sqawk allows you to be verbose to better document your script but aims to provide good defaults that save you keystrokes in interactive use.
+
+[Skip down](#more-examples) for more examples.
+
+
+# Installation
+
+Sqawk requires Tcl 8.5 or newer, Tcllib and SQLite version 3 bindings for Tcl installed.
+
+To install these dependencies on **Debian** and **Ubuntu** run the following command:
+
+    sudo apt-get install tcl tcllib libsqlite3-tcl
+
+On **Fedora**, **RHEL** and **CentOS**:
+
+    su -
+    yum install tcl tcllib sqlite-tcl
+
+On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
+
+    sudo pkg install tcl86 tcllib tcl-sqlite3
+    sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
+
+On **Windows** the easiest option is to install [ActiveTcl](https://www.activestate.com/activetcl/downloads) from ActiveState.
+
+On **OS X** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](https://www.activestate.com/activetcl/downloads) for Mac. With MacPorts:
+
+    sudo port install tcllib tcl-sqlite3
+
+Once you have the dependencies installed run
+
+    git clone https://github.com/dbohdan/sqawk
+    cd sqawk
+    make
+    make test
+    sudo make install
+
+or on Windows
+
+    git clone https://github.com/dbohdan/sqawk
+    cd sqawk
+    assemble.cmd
+    tclsh tests.tcl
+
+
 # Usage
 
 `sqawk [globaloptions] script [option=value ...] < filename`
@@ -14,26 +82,6 @@ or
 `sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
 One of the filenames can be `-` for the standard input.
-
-## An example
-
-Here is a somewhat contrived example that shows a script, a global option and several file options in use:
-
-```sh
-# List all login shells used on the system.
-sqawk -ORS '\n' 'select distinct shell from passwd order by shell' FS=: columns=username,password,uid,gui,info,home,shell table=passwd /etc/passwd
-```
-
-or
-
-```sh
-# Do the same thing.
-sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
-```
-
-Sqawk allows you to be verbose to better document your script but aims to provide reasonable defaults that save you keystrokes in interactive use.
-
-[Skip down](#more-examples) for more examples.
 
 ## SQL
 
@@ -96,6 +144,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 | `awk` or `raw` | `FS`, `RS`, `trim`, `fields` | `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto` | The default input parser. Splits input into records then fields using regular expressions. The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file. The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`) or neither (`trim=none`). The option `fields` configures how the fields of the input are mapped to the columns of the corresponding database table. This option lets you discard some of the fields, which can save memory, and to merge the contents of others. For example, `fields=1,2,3-5,auto` tells Sqawk to insert the contents of the first field into the column `a1` (assuming table `a`), the second field into `a2`, the third through the fifth field into `a3` and the rest of the fields starting with the sixth into the columns `a4`, 'a5' and so on, one field per column. If you merge several fields the whitespace between them is preserved. |
 | `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV. Using `format=csv2` or `format=csvalt` enables the [alternate mode](http://core.tcl-lang.org/tcllib/doc/trunk/embedded/www/tcllib/files/modules/csv/csv.html#section3) meant for parsing CSV files exported by Microsoft Excel. `csvsep` specifies the field separator; it defaults to `,`. `csvquote` selects what characters fields that themselves contain the separator are quotes with; it defaults to `"`. Note that only some characters can be used `csvquote`. |
 | `tcl` | `dicts` | `format=tcl dicts=true` | The value for `dicts` can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. The input is read as a Tcl list of either lists (`dicts=0`, the default) or dictionaries (`dicts=1`). When `dicts` is `0` each list becomes a row in the corresponding database table. If that table is `a`, its column `a0` contains the full list, `a1` contains the first element, `a2` the second element and so on. When `dicts` is `1` the first row of the table contains every unique key found in all of the dictionaries. It is intended as a table header for use with the [option](#per-file-options) `header=1`. The keys are in the same order they are in the first dictionary of the input (Tcl dictionaries are ordered). If some keys that aren't in the first dictionary but are in the subsequent ones they follow those that are in the first dictionary in alphabetical order. From the second row on the table contains the input data with the values mapped to columns in the same way that the keys are in the first row. |
+
 
 # More examples
 
@@ -269,44 +318,6 @@ c53a88c68b73f3c1632e3cdc7a0b4e49 9915 choosing_building.PNG
 bf60508db16a92a46bbd4107f15730cd 9946 glad_shot01.jpg
 ```
 
-# Installation
-
-Sqawk requires Tcl 8.5 or newer, Tcllib and SQLite version 3 bindings for Tcl installed.
-
-To install these dependencies on **Debian** and **Ubuntu** run the following command:
-
-    sudo apt-get install tcl tcllib libsqlite3-tcl
-
-On **Fedora**, **RHEL** and **CentOS**:
-
-    su -
-    yum install tcl tcllib sqlite-tcl
-
-On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
-
-    sudo pkg install tcl86 tcllib tcl-sqlite3
-    sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
-
-On **Windows** the easiest option is to install [ActiveTcl](https://www.activestate.com/activetcl/downloads) from ActiveState.
-
-On **OS X** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](https://www.activestate.com/activetcl/downloads) for Mac. With MacPorts:
-
-    sudo port install tcllib tcl-sqlite3
-
-Once you have the dependencies installed run
-
-    git clone https://github.com/dbohdan/sqawk
-    cd sqawk
-    make
-    make test
-    sudo make install
-
-or on Windows
-
-    git clone https://github.com/dbohdan/sqawk
-    cd sqawk
-    assemble.cmd
-    tclsh tests.tcl
 
 # License
 
