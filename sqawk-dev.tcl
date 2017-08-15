@@ -48,7 +48,7 @@ proc ::sqawk::script::process-options {argv} {
         {MNF.arg {expand} "NF mode (expand, normal or crop)"}
         {output.arg {awk} "Output format"}
         {v "Print version"}
-        {1 "One field only. A shortcut for -FS '^$'"}
+        {1 "One field only. A shortcut for -FS 'x^'"}
     }
 
     set usage {[options] script [[setting=value ...] filename ...]}
@@ -77,7 +77,7 @@ proc ::sqawk::script::process-options {argv} {
     }
 
     if {[dict get $cmdOptions 1]} {
-        dict set cmdOptions FS ^$
+        dict set cmdOptions FS x^
     }
 
     # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will

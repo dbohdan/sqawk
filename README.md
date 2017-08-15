@@ -105,7 +105,7 @@ These options affect all files.
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF error` | The NF mode. This option tells Sqawk what to do if a record exceeds the maximum number of fields: `expand`, the default, will increase `NF` automatically and add columns to the table during import if the record contains more fields than available; `crop` will truncate the record to `NF` fields (i.e., the fields for which there aren't enough table columns will be omitted); `error` makes Sqawk quit with an error message like `table x has no column named x11`. |
 | -output value | `-output awk` | The output format. See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
-| -1 | | Do not split records into fields. The same as `-F '^$'`. Improves the performance somewhat for when you only want to operate on whole records (lines). |
+| -1 | | Do not split records into fields. The same as `-F 'x^'`. Improves the performance somewhat for when you only want to operate on whole records (lines). |
 
 #### Output formats
 

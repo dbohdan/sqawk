@@ -136,7 +136,17 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "Yama Yama Yamasuki"
 
-    tcltest::test fs-2.1 {Bad custom field separator regexp} -setup {
+    tcltest::test fs-2.1 {Option -1} -setup {
+        init
+    } -body {
+        sqawk-tcl -1 -OFS , {
+            select a1, a2 from a
+        } << "a b\nc d\ne f\n"
+    } -cleanup {
+        uninit
+    } -result "a b,\nc d,\ne f,"
+
+    tcltest::test fs-3.1 {Bad custom field separator regexp} -setup {
         init
     } -body {
         source -encoding utf-8 sqawk.tcl
