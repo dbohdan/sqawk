@@ -55,19 +55,19 @@ proc ::sqawk::script::process-options {argv} {
     # ::cmdline::getoptions exits with a nonzero status if it sees a help flag.
     # We catch its help flags (plus {--help}) early to prevents this.
     if {$argv in {-h -help --help -?}} {
-        puts stdout [::cmdline::usage $options $usage]
+        puts stderr [::cmdline::usage $options $usage]
         exit 0
     }
     if {[catch {
         set cmdOptions [::cmdline::getoptions argv $options $usage]
     } err]} {
-        puts stdout $err
+        puts stderr $err
         exit 1
     }
 
     # Report version.
     if {[dict get $cmdOptions v]} {
-        puts stdout $::sqawk::version
+        puts stderr $::sqawk::version
         exit 0
     }
 
@@ -143,7 +143,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
                 script options fileOptionsForAllFiles
     } errorMessage]
     if {$error} {
-        puts stdout "error: $errorMessage"
+        puts stderr "error: $errorMessage"
         exit 1
     }
 
@@ -178,7 +178,7 @@ if {[info exists argv0] && ([file tail [info script]] eq [file tail $argv0])} {
     ::sqawk::script::main $argv0 $argv
     if {$::sqawk::script::profile} {
         foreach line [::profiler::sortFunctions exclusiveRuntime] {
-            puts stdout $line
+            puts stderr $line
         }
     }
 }
