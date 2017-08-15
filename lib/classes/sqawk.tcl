@@ -131,7 +131,7 @@ namespace eval ::sqawk {}
         ::sqawk::dict-ensure-default fileOptions F0 1
         ::sqawk::dict-ensure-default fileOptions csvquote \"
         ::sqawk::dict-ensure-default fileOptions csvsep ,
-        ::sqawk::dict-ensure-default fileOptions format raw
+        ::sqawk::dict-ensure-default fileOptions format awk
         ::sqawk::dict-ensure-default fileOptions merge {}
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]

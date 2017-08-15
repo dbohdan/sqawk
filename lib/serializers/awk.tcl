@@ -4,7 +4,7 @@
 
 namespace eval ::sqawk::serializers::awk {
     variable formats {
-        raw awk
+        awk
     }
     variable options {
         ofs {}

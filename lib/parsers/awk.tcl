@@ -4,7 +4,7 @@
 
 namespace eval ::sqawk::parsers::awk {
     variable formats {
-        raw awk
+        awk
     }
     variable options {
         FS {}
