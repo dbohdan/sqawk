@@ -51,7 +51,7 @@ On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
     sudo pkg install tcl86 tcllib tcl-sqlite3
     sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
 
-On **Windows** the easiest option is to install [ActiveTcl](https://www.activestate.com/activetcl/downloads) from ActiveState.
+On **Windows** install [Magicsplat Tcl/Tk for Windows](http://www.magicsplat.com/tcl-installer/) or [ActiveTcl](https://www.activestate.com/activetcl/downloads) from ActiveState.
 
 On **macOS** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](https://www.activestate.com/activetcl/downloads) for the Mac. With MacPorts:
 
