@@ -60,7 +60,7 @@ namespace eval ::sqawk {}
         set fields {}
         set colPrefix [$self cget -columnprefix]
         set command {
-            CREATE TABLE [$self cget -dbtable] (
+            CREATE TABLE IF NOT EXISTS [$self cget -dbtable] (
                 ${colPrefix}nr INTEGER PRIMARY KEY,
                 ${colPrefix}nf INTEGER
                 [join [list {} {*}$fields] ,]

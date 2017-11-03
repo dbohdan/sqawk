@@ -211,6 +211,18 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "1\n2\n3\n4\n5\n6"
 
+    tcltest::test table-1.3 {Use the same table for several files} -setup {
+        init filename1 "a\nb\nc" \
+             filename2 "x\ny" \
+             filename3 "z"
+    } -body {
+        sqawk-tcl {
+            select anr, a1 from a
+        } $filename1 table=a $filename2 table=a $filename3
+    } -cleanup {
+        uninit
+    } -result "1 a\n2 b\n3 c\n4 x\n5 y\n6 z"
+
     tcltest::test header-1.1 {Header row} -setup {
         set content {}
         append content "name\tposition\toffice\tphone\n"
@@ -1137,6 +1149,25 @@ namespace eval ::sqawk::tests {
     } -match regexp -result [join {
         {INSERT INTO "?a"? VALUES\(1,1,'\?','\?',NULL}
         {INSERT INTO "?b"? VALUES\(1,1,'!','!',NULL}
+    } .*]
+
+    tcltest::test dbfile-1.3 {Database file} -constraints {
+        sqlite3cli
+    } -setup {
+        init filename {}
+    } -body {
+        sqawk-tcl \
+            -dbfile $filename \
+            {select 0} << ?
+        sqawk-tcl \
+            -dbfile $filename \
+            {select 0} << !
+        exec sqlite3 $filename << .dump
+    } -cleanup {
+        uninit
+    } -match regexp -result [join {
+        {INSERT INTO "?a"? VALUES\(1,1,'\?','\?',NULL}
+        {INSERT INTO "?a"? VALUES\(2,1,'!','!',NULL}
     } .*]
 
     # Tabulate tests
