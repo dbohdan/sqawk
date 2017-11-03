@@ -46,6 +46,7 @@ proc ::sqawk::script::process-options {argv} {
         {ORS.arg {\n} "Output record separator"}
         {NF.arg 10 "Maximum NF value for all files"}
         {MNF.arg {expand} "NF mode (expand, normal or crop)"}
+        {dbfile.arg {:memory:} "The SQLite3 database file to create"}
         {output.arg {awk} "Output format"}
         {v "Print version"}
         {1 "One field only. A shortcut for -FS 'x^'"}
@@ -87,8 +88,10 @@ proc ::sqawk::script::process-options {argv} {
                 [dict get $cmdOptions $option]]
     }
 
-    # Settings that affect the Sqawk object itself.
-    set globalOptions [::sqawk::filter-keys $cmdOptions { OFS ORS output }]
+    # Settings that affect the program in general and Sqawk object itself.
+    set globalOptions [::sqawk::filter-keys $cmdOptions {
+        dbfile OFS ORS output
+    }]
 
     # Filenames and individual file settings.
     set fileCount 0
@@ -125,14 +128,17 @@ proc ::sqawk::script::process-options {argv} {
 }
 
 # Create an SQLite3 database for ::sqawk::sqawk to use.
-proc ::sqawk::script::create-database {database} {
+proc ::sqawk::script::create-database {database file} {
     variable debug
-
     if {$debug} {
-        file delete /tmp/sqawk.db
-        ::sqlite3 $database /tmp/sqawk.db
+        ::sqlite3 $database.real $file
+        proc ::$database args {
+            set me [dict get [info frame 0] proc]
+            puts "DEBUG: $me $args"
+            return [uplevel 1 [list $me.real {*}$args]]
+        }
     } else {
-        ::sqlite3 $database :memory:
+        ::sqlite3 $database $file
     }
 }
 
@@ -148,10 +154,12 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     }
 
     # Initialize Sqawk and the corresponding database.
-    ::sqawk::script::create-database $databaseHandle
+    set dbfile [dict get $options dbfile]
+    ::sqawk::script::create-database $databaseHandle $dbfile
     set sqawkObj [::sqawk::sqawk create %AUTO%]
     $sqawkObj configure \
             -database $databaseHandle \
+            -destroytables [expr {$dbfile eq {:memory}}] \
             -ofs [dict get $options OFS] \
             -ors [dict get $options ORS] \
             -outputformat [dict get $options output]
@@ -171,6 +179,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
         }
     }
     $sqawkObj destroy
+    ::sqlite3 $databaseHandle close
 }
 
 # If this is the main script...

@@ -65,6 +65,9 @@ namespace eval ::sqawk::tests {
     tcltest::testConstraint utf8 [expr {
         [encoding system] eq {utf-8}
     }]
+    tcltest::testConstraint sqlite3cli [expr {
+        ![catch { exec sqlite3 -version }]
+    }]
 
     tcltest::test error-handling-1.1 {Handle broken pipe, read from stdin} \
             -setup {
@@ -1101,6 +1104,40 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -returnCodes 1 -match glob -result {invalid MNF value: "foo"*}
+
+    tcltest::test dbfile-1.1 {Database file} -constraints {
+        sqlite3cli
+    } -setup {
+        init filename {}
+    } -body {
+        sqawk-tcl \
+            -dbfile $filename \
+            {select 0} << {a z}
+        exec sqlite3 $filename << .dump
+    } -cleanup {
+        uninit
+    } -match regexp -result {INSERT INTO "?a"? VALUES\(1,2,'a z','a','z',NULL}
+
+    tcltest::test dbfile-1.2 {Database file} -constraints {
+        sqlite3cli
+    } -setup {
+        init filename {}
+    } -body {
+        sqawk-tcl \
+            -dbfile $filename \
+            {select 0} \
+            table=a << ?
+        sqawk-tcl \
+            -dbfile $filename \
+            {select 0} \
+            table=b << !
+        exec sqlite3 $filename << .dump
+    } -cleanup {
+        uninit
+    } -match regexp -result [join {
+        {INSERT INTO "?a"? VALUES\(1,1,'\?','\?',NULL}
+        {INSERT INTO "?b"? VALUES\(1,1,'!','!',NULL}
+    } .*]
 
     # Tabulate tests
 

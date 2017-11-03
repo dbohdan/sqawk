@@ -17,6 +17,7 @@ namespace eval ::sqawk {}
     option -ofs
     option -ors
 
+    option -destroytables -default true
     option -outputformat -default awk
     option -parsers -default {} -configuremethod Set-and-update-format-list
     option -serializers -default {} -configuremethod Set-and-update-format-list
@@ -29,8 +30,10 @@ namespace eval ::sqawk {}
     }
 
     destructor {
-        dict for {_ tableObj} $tables {
-            $tableObj destroy
+        if {[$self cget -destroytables]} {
+            dict for {_ tableObj} $tables {
+                $tableObj destroy
+            }
         }
     }
 
