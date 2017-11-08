@@ -834,6 +834,13 @@ namespace eval ::sqawk::tests {
         uninit
     } -result \n\n\n
 
+    tcltest::test empty-script-1.1 {Empty script} -setup {
+        init
+    } -body {
+        sqawk-tcl
+    } -cleanup {
+        uninit
+    } -returnCodes 1 -match regexp -result {-help +Print this message}
 
     tcltest::test datatypes-1.1 {Datatypes} -setup {
         init datatypes1File "001 a\n002 b\nc"
