@@ -842,6 +842,22 @@ namespace eval ::sqawk::tests {
         uninit
     } -returnCodes 1 -match regexp -result {-help +Print this message}
 
+    tcltest::test noinput-1.1 {-noinput} -setup {
+        init
+    } -body {
+        sqawk-tcl -noinput {select 108}
+    } -cleanup {
+        uninit
+    } -result 108
+
+    tcltest::test noinput-1.2 {-noinput} -setup {
+        init
+    } -body {
+        sqawk-tcl -noinput {select * from a}
+    } -cleanup {
+        uninit
+    } -returnCodes 1 -match regexp -result {no such table: a}
+
     tcltest::test datatypes-1.1 {Datatypes} -setup {
         init datatypes1File "001 a\n002 b\nc"
     } -body {
@@ -1176,6 +1192,15 @@ namespace eval ::sqawk::tests {
         {INSERT INTO "?a"? VALUES\(1,1,'\?','\?',NULL}
         {INSERT INTO "?a"? VALUES\(2,1,'!','!',NULL}
     } .*]
+
+    tcltest::test dbfile-2.1 {Database file and -noinput} -setup {
+        init filename {}
+    } -body {
+        sqawk-tcl -dbfile $filename << {hello world}
+        sqawk-tcl -dbfile $filename -noinput {select a1, a2 from a}
+    } -cleanup {
+        uninit
+    } -result {hello world}
 
     # Tabulate tests
 
