@@ -171,8 +171,10 @@ namespace eval ::sqawk {}
         # Configure column names.
         set header {}
         if {[info exists metadata(header)] && $metadata(header)} {
-            # Remove the first field (a0/b0/...) from the header.
-            set header [lrange [lindex [::sqawk::lshift! rows] 0] 1 end]
+            # Remove the header from $rows.
+            set rows [lassign $rows headerF0]
+            # Strip the first field (a0/b0/...) from the header.
+            set header [lrange $headerF0 1 end]
         }
         # Override the header with custom column names.
         if {[info exists metadata(columns)]} {

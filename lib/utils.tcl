@@ -11,14 +11,6 @@ proc ::sqawk::dict-ensure-default {dictVarName key value} {
     set dictionary [dict merge [list $key $value] $dictionary]
 }
 
-# Remove and return $n elements from the list stored in the variable $varName.
-proc ::sqawk::lshift! {varName {n 1}} {
-    upvar 1 $varName list
-    set result [lrange $list 0 $n-1]
-    set list [lrange $list $n end]
-    return $result
-}
-
 # Return a subdictionary of $dictionary with only the keys in $keyList and the
 # corresponding values.
 proc ::sqawk::filter-keys {dictionary keyList {mustExist 1}} {

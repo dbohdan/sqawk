@@ -73,7 +73,7 @@ proc ::sqawk::script::process-options {argv} {
         exit 0
     }
 
-    lassign [::sqawk::lshift! argv] script
+    set argv [lassign $argv script]
     if {$script eq ""} {
         error "empty script"
     }
@@ -102,7 +102,7 @@ proc ::sqawk::script::process-options {argv} {
     }]
     set currentFileOptions $defaultFileOptions
     while {[llength $argv] > 0} {
-        lassign [::sqawk::lshift! argv] elem
+        set argv [lassign $argv elem]
         # setting=value
         if {[regexp {([^=]+)=(.*)} $elem _ key value]} {
             dict set currentFileOptions $key $value
