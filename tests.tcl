@@ -16,7 +16,9 @@ namespace eval ::sqawk::tests {
     }
 
     proc make-temp-file content {
-        return [tcltest::makeFile $content [::fileutil::tempfile]]
+        set filename [tcltest::makeFile {} [::fileutil::tempfile]]
+        ::fileutil::writeFile $filename $content
+        return $filename
     }
 
     proc init args {
