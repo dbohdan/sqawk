@@ -47,6 +47,7 @@ proc ::sqawk::script::process-options {argv} {
         {NF.arg 10 "Maximum NF value for all files"}
         {MNF.arg {expand} "NF mode (expand, normal or crop)"}
         {dbfile.arg {:memory:} "The SQLite3 database file to create"}
+        {noinput "Do not read from stdin when no filenames are given"}
         {output.arg {awk} "Output format"}
         {v "Print version"}
         {1 "One field only. A shortcut for -FS 'x^'"}
@@ -90,7 +91,7 @@ proc ::sqawk::script::process-options {argv} {
 
     # Settings that affect the program in general and Sqawk object itself.
     set globalOptions [::sqawk::filter-keys $cmdOptions {
-        dbfile OFS ORS output
+        dbfile noinput OFS ORS output
     }]
 
     # Filenames and individual file settings.
@@ -119,7 +120,7 @@ proc ::sqawk::script::process-options {argv} {
     }
     # If no files are given add "-" (standard input) with the current settings
     # to fileOptionsForAllFiles.
-    if {$fileCount == 0} {
+    if {$fileCount == 0 && ![dict get $globalOptions noinput]} {
         dict set currentFileOptions filename -
         lappend fileOptionsForAllFiles $currentFileOptions
     }
