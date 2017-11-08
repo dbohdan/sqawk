@@ -56,9 +56,9 @@ proc ::sqawk::script::process-options {argv} {
     set usage {[options] script [[setting=value ...] filename ...]}
     # ::cmdline::getoptions exits with a nonzero status if it sees a help flag.
     # We catch its help flags (plus {--help}) early to prevents this.
-    if {$argv in {-h -help --help -?}} {
+    if {$argv in {{} -h -help --help -?}} {
         puts stderr [::cmdline::usage $options $usage]
-        exit 0
+        exit [expr {$argv eq {} ? 1 : 0}]
     }
     if {[catch {
         set cmdOptions [::cmdline::getoptions argv $options $usage]
@@ -74,9 +74,6 @@ proc ::sqawk::script::process-options {argv} {
     }
 
     set argv [lassign $argv script]
-    if {$script eq ""} {
-        error "empty script"
-    }
 
     if {[dict get $cmdOptions 1]} {
         dict set cmdOptions FS x^
