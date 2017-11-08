@@ -14,10 +14,6 @@ proc ::assemble::read-file filename {
     return $result
 }
 
-proc ::assemble::line {{char #} {lineWidth 80}} {
-    return "# [string repeat $char [expr { $lineWidth - 2 }]]"
-}
-
 proc ::assemble::header {text {charLeft { }} {charRight { }} {lineWidth 80}} {
     set text " $text "
     set length [string length $text]
