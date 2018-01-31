@@ -1,6 +1,6 @@
 #!/usr/bin/env tclsh
 # Sqawk, an SQL Awk.
-# Copyright (C) 2015, 2016, 2017 dbohdan
+# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
 # License: MIT
 package require Tcl 8.5
 package require cmdline
