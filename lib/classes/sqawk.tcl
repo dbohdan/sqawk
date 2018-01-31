@@ -60,8 +60,8 @@ namespace eval ::sqawk {}
         }
     }
 
-    # Parse $data from $format into a list of rows.
-    method Parse {format data fileOptions} {
+    # Create a parser object for the format $format.
+    method Make-parser {format channel fileOptions} {
         set error [catch {
             set ns [dict get $formatToParser $format]
         }]
@@ -69,8 +69,17 @@ namespace eval ::sqawk {}
             error "unknown input format: \"$format\""
         }
         set parseOptions [set ${ns}::options]
-        return [${ns}::parse $data \
-                [::sqawk::override-keys $parseOptions $fileOptions]]
+
+        set error [catch {
+            set parser [${ns}::parser create %AUTO% $channel \
+                    [::sqawk::override-keys $parseOptions $fileOptions]]
+        } errorMessage errorOptions]
+        if {$error} {
+            regsub {^Error in constructor: } $errorMessage {} errorMessage
+            return -options $errorOptions $errorMessage
+        }
+
+        return $parser
     }
 
     # Create a serializer object for the format $format.
@@ -150,11 +159,8 @@ namespace eval ::sqawk {}
         } else {
             set ch [open $metadata(filename)]
         }
-        set raw [read $ch]
-        close $ch
 
-        set rows [$self Parse $metadata(format) $raw $fileOptions]
-        unset raw
+        set parser [$self Make-parser $metadata(format) $ch $fileOptions]
 
         # Create and configure a new table object.
         set newTable [::sqawk::table create %AUTO%]
@@ -172,10 +178,9 @@ namespace eval ::sqawk {}
         # Configure column names.
         set header {}
         if {[info exists metadata(header)] && $metadata(header)} {
-            # Remove the header from $rows.
-            set rows [lassign $rows headerF0]
-            # Strip the first field (a0/b0/...) from the header.
-            set header [lrange $headerF0 1 end]
+            # Remove the header from the input. Strip the first field
+            # (a0/b0/...) from the header.
+            set header [lrange [$parser next] 1 end]
         }
         # Override the header with custom column names.
         if {[info exists metadata(columns)]} {
@@ -190,8 +195,9 @@ namespace eval ::sqawk {}
 
         $newTable initialize
 
-        # Insert rows in the table.
-        $newTable insert-rows $rows
+        $newTable insert-rows [list $parser next]
+        $parser destroy
+        close $ch
 
         dict set tables $metadata(table) $newTable
         return $newTable

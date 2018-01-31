@@ -155,14 +155,15 @@ namespace eval ::sqawk::tests {
         init
     } -body {
         source -encoding utf-8 sqawk.tcl
-        ::sqawk::parsers::awk::parse "Yama Yama|Yamasuki" {
+        set parser [::sqawk::parsers::awk::parser %AUTO% dummy {
             FS |    RS \n    fields auto    trim none
-        }
+        }]
     } -cleanup {
         uninit
     } -returnCodes {
         error
-    } -result {splitting on regexp "|" would cause infinite loop}
+    } -result {Error in constructor:\
+               splitting on FS regexp "|" would cause infinite loop}
 
     tcltest::test join-1.1 {JOIN on two files from examples/hp/} -setup {
         init filename {}

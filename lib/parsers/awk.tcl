@@ -161,39 +161,57 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
 
 # Convert raw text data into a list of database rows using regular
 # expressions.
-proc ::sqawk::parsers::awk::parse {data options} {
-    # Parse $args.
-    set RS [dict get $options RS]
-    set FS [dict get $options FS]
-    set fields [dict get $options fields]
-    set trim [dict get $options trim]
+::snit::type ::sqawk::parsers::awk::parser {
+    variable RS
+    variable FS
+    variable fields
+    variable trim
 
-    # Split the raw data into records.
-    set records [::sqawk::parsers::awk::sepsplit $data $RS 0]
-    # Remove final record if empty (typically due to a newline at the end of
-    # the file).
-    if {[lindex $records end] eq {}} {
-        set records [lrange $records 0 end-1]
+    variable len
+    variable offset 0
+    variable raw
+
+    constructor {channel options} {
+        set RS [dict get $options RS]
+        set FS [dict get $options FS]
+        set fields [dict get $options fields]
+        set trim [dict get $options trim]
+
+        # Thanks to KBK for the idea.
+        if {[regexp $RS {}]} {
+            error "splitting on RS regexp \"$RS\" would cause infinite loop"
+        }
+        if {[regexp $FS {}]} {
+            error "splitting on FS regexp \"$FS\" would cause infinite loop"
+        }
+
+        # TODO: Do not read all input at once.
+        set raw [read $channel]
+        set len [string length $raw]
     }
 
-
-    # Split records into fields.
-    set rows {}
-    if {($fields eq {auto})} {
-        foreach record $records {
-            set record [::sqawk::parsers::awk::trim-record $record $trim]
-            lappend rows [list $record \
-                    {*}[::sqawk::parsers::awk::sepsplit $record $FS 0]]
+    method next {} {
+        if {[regexp -start $offset -indices -- $RS $raw match]} {
+            lassign $match matchStart matchEnd
+            set record [string range $raw $offset $matchStart-1]
+            set offset [expr {$matchEnd + 1}]
+        } elseif {$offset < $len} {
+            set record [string range $raw $offset end]
+            set offset $len
+        } else {
+            return -code break {}
         }
-    } else {
-        foreach record $records {
-            set record [::sqawk::parsers::awk::trim-record $record $trim]
+
+        set record [::sqawk::parsers::awk::trim-record $record $trim]
+
+        if {($fields eq {auto})} {
+            return [list \
+                    $record {*}[::sqawk::parsers::awk::sepsplit $record $FS 0]]
+        } else {
             set columns [::sqawk::parsers::awk::map \
                     [::sqawk::parsers::awk::sepsplit $record $FS] \
                     [::sqawk::parsers::awk::parseFieldMap $fields]]
-            lappend rows [list $record {*}$columns]
+            return [list $record {*}$columns]
         }
     }
-
-    return $rows
 }

@@ -14,34 +14,44 @@ namespace eval ::sqawk::parsers::csv {
 }
 
 # Convert CSV data into a list of database rows.
-proc ::sqawk::parsers::csv::parse {data options} {
-    package require csv
+::snit::type ::sqawk::parsers::csv::parser {
+    variable separator
+    variable quote
+    variable altMode
 
-    # Parse $args.
-    set separator [dict get $options csvsep]
-    set quote [dict get $options csvquote]
-    set altMode [expr { [dict get $options format] in {csv2 csvalt} }]
+    variable ch
 
-    set rows {}
-    set lines [split $data \n]
-    if {[lindex $lines end] eq {}} {
-        set lines [lrange $lines 0 end-1]
-    }
-    set error [catch {
-        set opts {}
-        if {$altMode} {
-            set opts -alternate
-        }
-        foreach line $lines {
-            lappend rows [list $line {*}[::csv::split {*}$opts $line $separator $quote]]
-        }
-    } errorMessage errorOptions]
-    if {$error} {
-        dict set errorOptions \
-                -errorinfo "CSV decoding error:\
-                        [dict get $errorOptions -errorinfo]"
-        return -options $errorOptions $errorMessage
+    constructor {channel options} {
+        package require csv
+
+        set ch $channel
+
+        set separator [dict get $options csvsep]
+        set quote [dict get $options csvquote]
+        set altMode [expr {
+            [dict get $options format] in {csv2 csvalt}
+        }]
     }
 
-    return $rows
+    method next {} {
+        if {[gets $ch line] < 0} {
+            return -code break {}
+        }
+
+        set error [catch {
+            set row [list $line {*}[::csv::split \
+                {*}[expr {$altMode ? {-alternate} : {}}] \
+                $line \
+                $separator \
+                $quote \
+            ]]
+        } errorMessage errorOptions]
+        if {$error} {
+            dict set errorOptions \
+                    -errorinfo "CSV decoding error:\
+                            [dict get $errorOptions -errorinfo]"
+            return -options $errorOptions $errorMessage
+        }
+        return $row
+    }
 }

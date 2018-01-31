@@ -75,9 +75,10 @@ namespace eval ::sqawk {}
         [$self cget -database] eval [subst $command]
     }
 
-    # Insert each row from the list $rows into the database table in a
-    # transaction.
-    method insert-rows rows {
+    # Insert each row returned when you run the script $next into the database
+    # table in a transaction. Finish when the script returns with -code
+    # break.
+    method insert-rows next {
         set db [$self cget -database]
         set colPrefix [$self cget -columnprefix]
         set tableName [$self cget -dbtable]
@@ -93,7 +94,8 @@ namespace eval ::sqawk {}
         }
 
         $db transaction {
-            foreach row $rows {
+            while 1 {
+                set row [{*}$next]
                 set nf [llength $row]
 
                 # Crop (truncate row) if needed.
