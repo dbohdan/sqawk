@@ -197,7 +197,7 @@ namespace eval ::sqawk {}
     }
 
     # Perform query $query and output the result to $channel.
-    method perform-query {query {channel stdout}} {
+    method eval {query {channel stdout}} {
         # For each row returned...
         set outputRecords {}
         [$self cget -database] eval $query results {

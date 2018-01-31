@@ -167,7 +167,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     }
 
     set error [catch {
-        $sqawkObj perform-query $script
+        $sqawkObj eval $script
     } errorMessage errorOptions]
     if {$error} {
         # Ignore errors caused by stdout being closed during output (e.g., if
