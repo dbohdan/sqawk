@@ -164,7 +164,7 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
 ::snit::type ::sqawk::parsers::awk::parser {
     variable RS
     variable FS
-    variable fields
+    variable fieldMap
     variable trim
 
     variable len
@@ -174,7 +174,8 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
     constructor {channel options} {
         set RS [dict get $options RS]
         set FS [dict get $options FS]
-        set fields [dict get $options fields]
+        set fieldMap [::sqawk::parsers::awk::parseFieldMap \
+                [dict get $options fields]]
         set trim [dict get $options trim]
 
         # Thanks to KBK for the idea.
@@ -204,13 +205,13 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
 
         set record [::sqawk::parsers::awk::trim-record $record $trim]
 
-        if {($fields eq {auto})} {
+        if {($fieldMap eq {auto})} {
             return [list \
                     $record {*}[::sqawk::parsers::awk::sepsplit $record $FS 0]]
         } else {
             set columns [::sqawk::parsers::awk::map \
                     [::sqawk::parsers::awk::sepsplit $record $FS] \
-                    [::sqawk::parsers::awk::parseFieldMap $fields]]
+                    $fieldMap]
             return [list $record {*}$columns]
         }
     }
