@@ -73,8 +73,8 @@ namespace eval ::sqawk {}
                 [::sqawk::override-keys $parseOptions $fileOptions]]
     }
 
-    # Serialize a list of rows into text in the format $format.
-    method Serialize {format data sqawkOptions} {
+    # Create a serializer object for the format $format.
+    method Make-serializer {format script sqawkOptions} {
         # Parse $format.
         set splitFormat [split $format ,]
         set formatName [lindex $splitFormat 0]
@@ -120,7 +120,8 @@ namespace eval ::sqawk {}
                         \"$formatName\":\ \"$key\""
             }
         }
-        return [${ns}::serialize $data $so]
+
+        return [${ns}::serializer create %AUTO% $script $so]
     }
 
     # Read data from a file or a channel into a new database table. The filename
@@ -198,22 +199,23 @@ namespace eval ::sqawk {}
 
     # Perform query $query and output the result to $channel.
     method eval {query {channel stdout}} {
+        set sqawkOptions {}
+        foreach option [$self info options] {
+            dict set sqawkOptions $option [$self cget $option]
+        }
+
+        set serializer [$self Make-serializer \
+                [$self cget -outputformat] {puts -nonewline} $sqawkOptions]
+
         # For each row returned...
-        set outputRecords {}
         [$self cget -database] eval $query results {
             set outputRecord {}
             set keys $results(*)
             foreach key $keys {
                 lappend outputRecord $key $results($key)
             }
-            lappend outputRecords $outputRecord
+            $serializer serialize $outputRecord
         }
-        set sqawkOptions {}
-        foreach option [$self info options] {
-            dict set sqawkOptions $option [$self cget $option]
-        }
-        set output [$self Serialize [$self cget -outputformat] $outputRecords \
-                $sqawkOptions]
-        puts -nonewline $channel $output
+        $serializer destroy
     }
 }

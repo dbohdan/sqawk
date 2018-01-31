@@ -12,16 +12,34 @@ namespace eval ::sqawk::serializers::tcl {
 }
 
 # A (near) pass-through serializer.
-proc ::sqawk::serializers::tcl::serialize {outputRecs options} {
-    set useDicts [dict get $options dicts]
+::snit::type ::sqawk::serializers::tcl::serializer {
+    variable script
+    variable useDicts
 
-    if {$useDicts} {
-        set result $outputRecs
-    } else {
-        set result {}
-        foreach record $outputRecs {
-            lappend result [dict values $record]
+    variable first 1
+    variable initialized 0
+
+    constructor {script_ options} {
+        set script $script_
+        set useDicts [dict get $options dicts]
+        set initialized 1
+    }
+
+    method serialize record {
+        set s [expr {$first ? {} : { }}]
+        set first 0
+
+        if {$useDicts} {
+            append s [list $record]
+        } else {
+            append s [list [dict values $record]]
+        }
+        {*}$script $s
+    }
+
+    destructor {
+        if {$initialized} {
+            {*}$script \n
         }
     }
-    return $result\n
 }

@@ -13,14 +13,18 @@ namespace eval ::sqawk::serializers::awk {
 }
 
 # Convert records to text.
-proc ::sqawk::serializers::awk::serialize {outputRecs options} {
-    # Parse $args.
-    set OFS [dict get $options ofs]
-    set ORS [dict get $options ors]
+::snit::type ::sqawk::serializers::awk::serializer {
+    variable script
+    variable OFS
+    variable ORS
 
-    set text {}
-    foreach record $outputRecs {
-        append text [join [dict values $record] $OFS]$ORS
+    constructor {script_ options} {
+        set script $script_
+        set OFS [dict get $options ofs]
+        set ORS [dict get $options ors]
     }
-    return $text
+
+    method serialize record {
+        {*}$script [join [dict values $record] $OFS]$ORS
+    }
 }

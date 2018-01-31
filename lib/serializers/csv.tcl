@@ -9,13 +9,17 @@ namespace eval ::sqawk::serializers::csv {
     variable options {}
 }
 
-# Convert records to text.
-proc ::sqawk::serializers::csv::serialize {outputRecs options} {
-    package require csv
+# Convert records to CSV.
+::snit::type ::sqawk::serializers::csv::serializer {
+    variable script
 
-    set text {}
-    foreach record $outputRecs {
-        append text [::csv::join [dict values $record]]\n
+    constructor {script_ options} {
+        package require csv
+
+        set script $script_
     }
-    return $text
+
+    method serialize record {
+        {*}$script [::csv::join [dict values $record]]\n
+    }
 }

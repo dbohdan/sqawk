@@ -13,25 +13,44 @@ namespace eval ::sqawk::serializers::json {
 }
 
 # Convert records to JSON.
-proc ::sqawk::serializers::json::serialize {outputRecs options} {
-    package require json::write
+::snit::type ::sqawk::serializers::json::serializer {
+    variable script
+    variable useArrays
+    variable first 1
+    variable initalized 0
 
-    set useArrays [dict get $options arrays]
-    set indent [dict get $options indent]
+    constructor {script_ options} {
+        package require json::write
 
-    ::json::write indented $indent
+        set script $script_
+        set useArrays [dict get $options arrays]
+        ::json::write indented [dict get $options indent]
 
-    set topLevel {}
-    foreach record $outputRecs {
+        {*}$script \[
+        set initalized 1
+    }
+
+    method serialize record {
+        set fragment [expr {$first ? {} : {,}}]
+        set first 0
+
         set object {}
         foreach {key value} $record {
             lappend object $key [::json::write string $value]
         }
+
         if {$useArrays} {
-            lappend topLevel [::json::write array {*}[dict values $object]]
+            append fragment [::json::write array {*}[dict values $object]]
         } else {
-            lappend topLevel [::json::write object {*}$object]
+            append fragment [::json::write object {*}$object]
+        }
+
+        {*}$script $fragment
+    }
+
+    destructor {
+        if {$initalized} {
+            {*}$script \]\n
         }
     }
-    return [::json::write array {*}$topLevel]\n
 }
