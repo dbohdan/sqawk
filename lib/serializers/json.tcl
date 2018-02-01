@@ -14,19 +14,19 @@ namespace eval ::sqawk::serializers::json {
 
 # Convert records to JSON.
 ::snit::type ::sqawk::serializers::json::serializer {
-    variable script
+    variable ch
     variable useArrays
     variable first 1
     variable initalized 0
 
-    constructor {script_ options} {
+    constructor {channel options} {
         package require json::write
 
-        set script $script_
+        set ch $channel
         set useArrays [dict get $options arrays]
         ::json::write indented [dict get $options indent]
 
-        {*}$script \[
+        puts -nonewline $ch \[
         set initalized 1
     }
 
@@ -45,12 +45,12 @@ namespace eval ::sqawk::serializers::json {
             append fragment [::json::write object {*}$object]
         }
 
-        {*}$script $fragment
+        puts -nonewline $ch $fragment
     }
 
     destructor {
         if {$initalized} {
-            {*}$script \]\n
+            puts $ch \]
         }
     }
 }

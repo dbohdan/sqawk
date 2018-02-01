@@ -15,7 +15,7 @@ namespace eval ::sqawk::serializers::table {
 }
 
 ::snit::type ::sqawk::serializers::table::serializer {
-    variable script
+    variable ch
 
     variable alignments
     variable margins
@@ -24,8 +24,8 @@ namespace eval ::sqawk::serializers::table {
 
     variable initialized 0
 
-    constructor {script_ options} {
-        set script $script_
+    constructor {channel options} {
+        set ch $channel
 
         if {([dict get $options align] ne {}) &&
                 ([dict get $options alignments] ne {})} {
@@ -48,7 +48,7 @@ namespace eval ::sqawk::serializers::table {
 
     destructor {
         if {$initialized} {
-            {*}$script [::tabulate::tabulate \
+            puts $ch [::tabulate::tabulate \
                     -data $tableData \
                     -alignments $alignments \
                     -margins $margins \

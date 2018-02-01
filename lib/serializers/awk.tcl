@@ -14,17 +14,17 @@ namespace eval ::sqawk::serializers::awk {
 
 # Convert records to text.
 ::snit::type ::sqawk::serializers::awk::serializer {
-    variable script
+    variable ch
     variable OFS
     variable ORS
 
-    constructor {script_ options} {
-        set script $script_
+    constructor {channel options} {
+        set ch $channel
         set OFS [dict get $options ofs]
         set ORS [dict get $options ors]
     }
 
     method serialize record {
-        {*}$script [join [dict values $record] $OFS]$ORS
+        puts -nonewline $ch [join [dict values $record] $OFS]$ORS
     }
 }

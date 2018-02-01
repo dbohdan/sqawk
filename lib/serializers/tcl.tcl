@@ -13,14 +13,14 @@ namespace eval ::sqawk::serializers::tcl {
 
 # A (near) pass-through serializer.
 ::snit::type ::sqawk::serializers::tcl::serializer {
-    variable script
+    variable ch
     variable useDicts
 
     variable first 1
     variable initialized 0
 
-    constructor {script_ options} {
-        set script $script_
+    constructor {channel options} {
+        set ch $channel
         set useDicts [dict get $options dicts]
         set initialized 1
     }
@@ -34,12 +34,12 @@ namespace eval ::sqawk::serializers::tcl {
         } else {
             append s [list [dict values $record]]
         }
-        {*}$script $s
+        puts -nonewline $ch $s
     }
 
     destructor {
         if {$initialized} {
-            {*}$script \n
+            puts $ch {}
         }
     }
 }

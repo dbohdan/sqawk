@@ -83,7 +83,7 @@ namespace eval ::sqawk {}
     }
 
     # Create a serializer object for the format $format.
-    method Make-serializer {format script sqawkOptions} {
+    method Make-serializer {format channel sqawkOptions} {
         # Parse $format.
         set splitFormat [split $format ,]
         set formatName [lindex $splitFormat 0]
@@ -130,7 +130,7 @@ namespace eval ::sqawk {}
             }
         }
 
-        return [${ns}::serializer create %AUTO% $script $so]
+        return [${ns}::serializer create %AUTO% $channel $so]
     }
 
     # Read data from a file or a channel into a new database table. The filename
@@ -211,7 +211,7 @@ namespace eval ::sqawk {}
         }
 
         set serializer [$self Make-serializer \
-                [$self cget -outputformat] {puts -nonewline} $sqawkOptions]
+                [$self cget -outputformat] stdout $sqawkOptions]
 
         # For each row returned...
         [$self cget -database] eval $query results {

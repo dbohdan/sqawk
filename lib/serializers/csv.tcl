@@ -11,15 +11,15 @@ namespace eval ::sqawk::serializers::csv {
 
 # Convert records to CSV.
 ::snit::type ::sqawk::serializers::csv::serializer {
-    variable script
+    variable ch
 
-    constructor {script_ options} {
+    constructor {channel options} {
         package require csv
 
-        set script $script_
+        set ch $channel
     }
 
     method serialize record {
-        {*}$script [::csv::join [dict values $record]]\n
+        puts $ch [::csv::join [dict values $record]]
     }
 }
