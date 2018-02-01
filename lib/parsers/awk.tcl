@@ -167,11 +167,16 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
     variable fieldMap
     variable trim
 
+    variable ch
     variable len
     variable offset 0
-    variable raw
+    variable buf {}
+
+    variable step [expr {1024 * 1024}]
 
     constructor {channel options} {
+        set ch $channel
+
         set RS [dict get $options RS]
         set FS [dict get $options FS]
         set fieldMap [::sqawk::parsers::awk::parseFieldMap \
@@ -185,19 +190,25 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
         if {[regexp $FS {}]} {
             error "splitting on FS regexp \"$FS\" would cause infinite loop"
         }
-
-        # TODO: Do not read all input at once.
-        set raw [read $channel]
-        set len [string length $raw]
     }
 
     method next {} {
-        if {[regexp -start $offset -indices -- $RS $raw match]} {
+        # Truncate the buffer.
+        if {$offset >= $step} {
+            set buf [string range $buf $offset end]
+            set offset 0
+        }
+        # Fill up the buffer until we have at least one record.
+        while {!([regexp -start $offset $RS $buf] || [eof $ch])} {
+            append buf [read $ch $step]
+        }
+        set len [string length $buf]
+        if {[regexp -start $offset -indices -- $RS $buf match]} {
             lassign $match matchStart matchEnd
-            set record [string range $raw $offset $matchStart-1]
+            set record [string range $buf $offset $matchStart-1]
             set offset [expr {$matchEnd + 1}]
         } elseif {$offset < $len} {
-            set record [string range $raw $offset end]
+            set record [string range $buf $offset end]
             set offset $len
         } else {
             return -code break {}

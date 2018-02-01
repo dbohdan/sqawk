@@ -546,6 +546,28 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "foo 1-foo 3\nbar    4-bar    6"
 
+    tcltest::test chunked-input-1.1 {input chunking in "awk" parser} -setup {
+        init
+    } -body {
+        set s "1 this-is-just-filler never-mind-it\n2 \
+               lorem-ipsum-dolor-sit-amet-consectetur-adipiscing-elit-vivamus\
+               consequat-ut-iaculis-vel-porta-ullamcorper-velit\n3 \
+               interdum-et-malesuada-fames we-have-a-quota-to-meet-you-know\
+               donec-mollis-ligula-id-enim-suscipit-cursus-nibh-sagittis\
+               ullamcorper-est-lectus-eget-ex all-right-thats-enough\n"
+        set times 5000
+        if {[string length $s] * $times < 1024 * 1024} {
+            error {generated input too small}
+        }
+        set sequence [string repeat $s $times]
+        sqawk-tcl {
+            select sum(a1) from a
+        } << $sequence
+    } -cleanup {
+        uninit
+        unset s sequence times
+    } -result 30000
+
     tcltest::test format-1.1 {CSV input} -constraints {
         utf8
     } -setup {
