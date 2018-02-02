@@ -89,20 +89,20 @@ namespace eval ::sqawk {}
         set modeNF [$self cget -modenf]
         set curNF 0
         set f0 [$self cget -f0]
-        if {$f0} {
-            set startF 0
-        } else {
-            set startF 1
-        }
+        set startF [expr {$f0 ? 0 : 1}]
 
         $db transaction {
             while 1 {
-                set row [{*}$next]
-                set nf [llength $row]
-
-                # Crop (truncate row) if needed.
-                if {$modeNF eq "crop" && $nf >= $maxNF} {
-                    set nf [llength [set row [lrange $row 0 $maxNF]]]
+                set nf 0
+                # [{*}$next] must return -code break when it runs out of data to
+                # pass to us. That's how we leave this [while] loop.
+                foreach field [{*}$next] {
+                    set row($nf) $field
+                    incr nf
+                    # Crop (truncate row) if needed.
+                    if {$modeNF eq "crop" && $nf > $maxNF} {
+                        break
+                    }
                 }
 
                 # Prepare the statement unless it's already been prepared and
@@ -118,7 +118,7 @@ namespace eval ::sqawk {}
                         set insertValues [list \$nf]
                         for {set i $startF} {$i < $nf} {incr i} {
                             lappend insertColumnNames [$self column-name $i]
-                            lappend insertValues \$cv($i)
+                            lappend insertValues \$row($i)
                         }
 
                         # Expand (alter) table if needed.
@@ -139,18 +139,10 @@ namespace eval ::sqawk {}
                     }
                 }
 
-                # Put fields into the array cv.
-                set i $startF
-                foreach field [lrange $row $startF end] {
-                    set cv($i) $field
-                    incr i
-                }
-
                 incr nf -1
-
                 $db eval $statement
-                if {$i > $startF} {
-                    unset cv
+                if {$nf > $startF} {
+                    unset row
                 }
             }
         }
