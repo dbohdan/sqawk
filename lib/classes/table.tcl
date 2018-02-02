@@ -58,21 +58,23 @@ namespace eval ::sqawk {}
     # Create a database table for the table object.
     method initialize {} {
         set fields {}
-        set colPrefix [$self cget -columnprefix]
-        set command {
-            CREATE TABLE IF NOT EXISTS [$self cget -dbtable] (
-                ${colPrefix}nr INTEGER PRIMARY KEY,
-                ${colPrefix}nf INTEGER
-                [join [list {} {*}$fields] ,]
-            )
-        }
         if {[$self cget -f0]} {
             lappend fields "[$self column-name 0] TEXT"
         }
         for {set i 1} {$i <= [$self cget -maxnf]} {incr i} {
             lappend fields "[$self column-name $i] [$self column-datatype $i]"
         }
-        [$self cget -database] eval [subst $command]
+
+        set colPrefix [$self cget -columnprefix]
+        set command "CREATE TABLE IF NOT EXISTS [$self cget -dbtable] ("
+        append command "\n    ${colPrefix}nr INTEGER PRIMARY KEY,"
+        append command "\n    ${colPrefix}nf INTEGER"
+        if {$fields ne {}} {
+            append command ",\n    [join $fields ",\n    "]"
+        }
+        append command )
+
+        [$self cget -database] eval $command
     }
 
     # Insert each row returned when you run the script $next into the database
@@ -122,8 +124,8 @@ namespace eval ::sqawk {}
                         # Expand (alter) table if needed.
                         if {$modeNF eq "expand" && $nf - 1 > $maxNF} {
                             for {set i $maxNF; incr i} {$i < $nf} {incr i} {
-                                $db eval "ALTER TABLE $tableName ADD COLUMN
-                                        [$self column-name $i]
+                                $db eval "ALTER TABLE $tableName ADD COLUMN\
+                                        [$self column-name $i]\
                                         [$self column-datatype $i]"
                             }
                             $self configure -maxnf [set maxNF [incr i -1]]

@@ -1227,6 +1227,21 @@ namespace eval ::sqawk::tests {
         uninit
     } -result {hello world}
 
+    tcltest::test dbfile-3.1 {SQL formatting in .dump} -constraints {
+        sqlite3cli
+    } -setup {
+        init filename {}
+    } -body {
+        sqawk-tcl \
+                -dbfile $filename \
+                -NF 2 \
+                << "1 foo a\n2 bar b\n3 baz c\n4 qux d e\n5 f g h"
+        exec sqlite3 $filename << .dump
+    } -cleanup {
+        uninit
+    } -match regexp -result {CREATE TABLE a \(\n    anr\
+        INTEGER PRIMARY KEY,\n    anf INTEGER,\n    a0 TEXT,\n    a1\
+        INTEGER,\n    a2 INTEGER, a3 INTEGER, a4 INTEGER\);}
     # Tabulate tests
 
     proc tabulate-tcl args {
