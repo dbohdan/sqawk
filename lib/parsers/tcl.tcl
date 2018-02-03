@@ -14,14 +14,12 @@ namespace eval ::sqawk::parsers::tcl {
 ::snit::type ::sqawk::parsers::tcl::parser {
     variable useDicts
 
-    variable ch
     variable data
     variable i
     variable keys
     variable len
 
     constructor {channel options} {
-        set ch $channel
         set useDicts [dict get $options dicts]
         set i [expr {$useDicts ? -1 : 0}]
         set data [read $channel]
