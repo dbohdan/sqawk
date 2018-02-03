@@ -33,9 +33,11 @@ proc ::sqawk::parsers::awk::sepsplit {str regexp {includeSeparators 1}} {
     set offset 0
     while {[regexp -start $offset -indices -- $regexp $str match]} {
         lassign $match matchStart matchEnd
-        lappend fieldsAndSeps     [string range $str $offset     $matchStart-1]
+        lappend fieldsAndSeps \
+                [string range $str $offset [expr {$matchStart - 1}]]
         if {$includeSeparators} {
-            lappend fieldsAndSeps [string range $str $matchStart $matchEnd]
+            lappend fieldsAndSeps \
+                    [string range $str $matchStart $matchEnd]
         }
         set offset [expr {$matchEnd + 1}]
     }
@@ -82,8 +84,8 @@ proc ::sqawk::parsers::awk::map {fieldsAndSeps fieldMap} {
     set currentColumn 0
     foreach mapping $fieldMap {
         if {$mapping eq {auto}} {
-            foreach {field _} [lrange $fieldsAndSeps \
-                    [expr {$currentColumn*2}] end] {
+            foreach {field _} \
+                    [lrange $fieldsAndSeps [expr {$currentColumn*2}] end] {
                 lappend columns $field
             }
             break
@@ -172,13 +174,15 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
             set offset 0
         }
         # Fill up the buffer until we have at least one record.
-        while {!([regexp -start $offset $RS $buf] || [eof $ch])} {
+        while {!([set regExpMatched \
+                        [regexp -start $offset -indices -- $RS $buf match]]
+                || [eof $ch])} {
             append buf [read $ch $step]
         }
         set len [string length $buf]
-        if {[regexp -start $offset -indices -- $RS $buf match]} {
+        if {$regExpMatched} {
             lassign $match matchStart matchEnd
-            set record [string range $buf $offset $matchStart-1]
+            set record [string range $buf $offset [expr {$matchStart - 1}]]
             set offset [expr {$matchEnd + 1}]
         } elseif {$offset < $len} {
             set record [string range $buf $offset end]
