@@ -14,23 +14,6 @@ namespace eval ::sqawk::parsers::awk {
     }
 }
 
-# Find out if $number is in a range in $rangeList. Returns 1-3 if it is and 0 if
-# it isn't.
-proc ::sqawk::parsers::awk::in-range? {number rangeList} {
-    foreach {first last} $rangeList {
-        if {$first == $number} {
-            return 1
-        }
-        if {($first < $number) && ($number < $last)} {
-            return 2
-        }
-        if {$number == $last} {
-            return 3
-        }
-    }
-    return 0
-}
-
 # Split $str on separators that match $regexp. Returns a list consisting of
 # fields and, if $includeSeparators is 1, the separators after each.
 proc ::sqawk::parsers::awk::sepsplit {str regexp {includeSeparators 1}} {
@@ -83,16 +66,6 @@ proc ::sqawk::parsers::awk::trim-record {record mode} {
         default { error "unknown mode: \"$mode\""       }
     }
     return $record
-}
-
-# Return 1 if $from-$to is a valid field range and 0 otherwise.
-proc ::sqawk::parsers::awk::valid-range? {from to} {
-    return [expr {
-        [string is integer -strict $from] &&
-        (0 <= $from) &&
-        (($to eq {end}) || [string is integer -strict $to]) &&
-        ($from <= $to)
-    }]
 }
 
 # Return a list of columns.

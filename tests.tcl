@@ -330,46 +330,6 @@ namespace eval ::sqawk::tests {
         uninit
     } -result b\nc
 
-    tcltest::test field-mapping-1.1 {::sqawk::parsers::awk::valid-range?} \
-            -setup {
-        init
-    } -body {
-        source -encoding utf-8 sqawk.tcl
-        set result {}
-        lappend result [::sqawk::parsers::awk::valid-range? 0 1]
-        lappend result [::sqawk::parsers::awk::valid-range? -5 1]
-        lappend result [::sqawk::parsers::awk::valid-range? 1 0]
-        lappend result [::sqawk::parsers::awk::valid-range? 5 end]
-        lappend result [::sqawk::parsers::awk::valid-range? end 5]
-        lappend result [::sqawk::parsers::awk::valid-range? start end]
-        lappend result [::sqawk::parsers::awk::valid-range? start 5]
-        lappend result [::sqawk::parsers::awk::valid-range? blah blah]
-        lappend result [::sqawk::parsers::awk::valid-range? 999 9999]
-    } -cleanup {
-        unset result
-        uninit
-    } -result {1 0 0 1 0 0 0 0 1}
-
-    tcltest::test field-mapping-1.2 {::sqawk::parsers::awk::in-range?} \
-            -setup {
-        init
-    } -body {
-        source -encoding utf-8 sqawk.tcl
-        set result {}
-        lappend result [::sqawk::parsers::awk::in-range? 5 {0 1}]
-        lappend result [::sqawk::parsers::awk::in-range? 5 {0 5}]
-        lappend result [::sqawk::parsers::awk::in-range? 5 {0 99}]
-        lappend result [::sqawk::parsers::awk::in-range? 0 {0 0}]
-        lappend result [::sqawk::parsers::awk::in-range? 0 {1 1}]
-        lappend result [::sqawk::parsers::awk::in-range? 1 {0 0}]
-        lappend result [::sqawk::parsers::awk::in-range? 3 {5 end}]
-        lappend result [::sqawk::parsers::awk::in-range? 5 {5 end}]
-        lappend result [::sqawk::parsers::awk::in-range? 7 {5 end}]
-    } -cleanup {
-        unset result
-        uninit
-    } -result {0 3 2 1 0 0 0 1 2}
-
     tcltest::test field-mapping-1.3 {::sqawk::parsers::awk::parseFieldMap} \
             -setup {
         init
