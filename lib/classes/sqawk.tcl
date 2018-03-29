@@ -62,22 +62,22 @@ namespace eval ::sqawk {}
 
     # Create a parser object for the format $format.
     method Make-parser {format channel fileOptions} {
-        set error [catch {
+        try {
             set ns [dict get $formatToParser $format]
-        }]
-        if {$error} {
+        } on error {} {
             error "unknown input format: \"$format\""
         }
         set parseOptions [set ${ns}::options]
 
-        set error [catch {
-            set parser [${ns}::parser create %AUTO% $channel \
-                    [::sqawk::override-keys $parseOptions $fileOptions]]
-        } errorMessage errorOptions]
-        if {$error} {
+        try {
+            ${ns}::parser create %AUTO% \
+                                 $channel \
+                                 [::sqawk::override-keys $parseOptions \
+                                                         $fileOptions]
+        } on error {errorMessage errorOptions} {
             regsub {^Error in constructor: } $errorMessage {} errorMessage
             return -options $errorOptions $errorMessage
-        }
+        } on ok parser {}
 
         return $parser
     }
@@ -92,10 +92,9 @@ namespace eval ::sqawk {}
             lassign [split $option =] key value
             lappend formatOptions $key $value
         }
-        set error [catch {
+        try {
             set ns [dict get $formatToSerializer $formatName]
-        }]
-        if {$error} {
+        } on error {} {
             error "unknown output format: \"$formatName\""
         }
 

@@ -38,15 +38,14 @@ namespace eval ::sqawk::parsers::csv {
             return -code break {}
         }
 
-        set error [catch {
+        try {
             set row [list $line {*}[::csv::split \
                 {*}[expr {$altMode ? {-alternate} : {}}] \
                 $line \
                 $separator \
                 $quote \
             ]]
-        } errorMessage errorOptions]
-        if {$error} {
+        } on error {errorMessage errorOptions} {
             dict set errorOptions \
                     -errorinfo "CSV decoding error:\
                             [dict get $errorOptions -errorinfo]"

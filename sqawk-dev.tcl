@@ -60,12 +60,13 @@ proc ::sqawk::script::process-options {argv} {
         puts stderr [::cmdline::usage $options $usage]
         exit [expr {$argv eq {} ? 1 : 0}]
     }
-    if {[catch {
-        set cmdOptions [::cmdline::getoptions argv $options $usage]
-    } err]} {
+
+    try {
+        ::cmdline::getoptions argv $options $usage
+    } on error err {
         puts stderr $err
         exit 1
-    }
+    } on ok cmdOptions {}
 
     # Report version.
     if {[dict get $cmdOptions v]} {
@@ -142,11 +143,10 @@ proc ::sqawk::script::create-database {database file} {
 
 proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     # Try to process the command line options.
-    set error [catch {
+    try {
         lassign [::sqawk::script::process-options $argv] \
                 script options fileOptionsForAllFiles
-    } errorMessage]
-    if {$error} {
+    } on error errorMessage {
         puts stderr "error: $errorMessage"
         exit 1
     }
@@ -166,16 +166,9 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
         $sqawkObj read-file $file
     }
 
-    set error [catch {
+    try {
         $sqawkObj eval $script
-    } errorMessage errorOptions]
-    if {$error} {
-        # Ignore errors caused by stdout being closed during output (e.g., if
-        # someone is piping the output to head(1)).
-        if {[lrange [dict get $errorOptions -errorcode] 0 1] ne {POSIX EPIPE}} {
-            return -options $errorOptions $errorMessage
-        }
-    }
+    } trap {POSIX EPIPE} {} {}
     $sqawkObj destroy
     ::sqlite3 $databaseHandle close
 }
