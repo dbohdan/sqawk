@@ -168,7 +168,10 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
 ## Pretty-print data as a table
 
-    ps | sqawk -output table 'select a1,a2,a3,a4 from a' trim=left
+    ps | sqawk -output table \
+         'select a1,a2,a3,a4 from a' \
+         trim=left \
+         fields=1,2,3,4-end
 
 ### Sample output
 
@@ -186,26 +189,40 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 
 ## Convert input to JSON objects
 
-    ps | sqawk -output json,indent=1 'select PID,TTY,TIME,CMD from a' trim=left header=1
+
+    ps a | sqawk -output json,indent=1 \
+                 'select PID, TTY, STAT, TIME, COMMAND from a' \
+                 trim=left \
+                 fields=1,2,3,4,5-end \
+                 header=1
 
 ### Sample output
 
 ```
 [{
-    "PID"  : "3947",
-    "TTY"  : "pts/2",
-    "TIME" : "00:00:07",
-    "CMD"  : "zsh"
+    "PID"     : "1171",
+    "TTY"     : "tty7",
+    "STAT"    : "Rsl+",
+    "TIME"    : "191:10",
+    "COMMAND" : "/usr/lib/xorg/Xorg -core :0 -seat seat0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -novtswitch"
 },{
-    "PID"  : "15951",
-    "TTY"  : "pts/2",
-    "TIME" : "00:00:00",
-    "CMD"  : "ps"
+    "PID"     : "1631",
+    "TTY"     : "tty1",
+    "STAT"    : "Ss+",
+    "TIME"    : "0:00",
+    "COMMAND" : "/sbin/agetty --noclear tty1 linux"
+}, <...>, {
+    "PID"     : "26583",
+    "TTY"     : "pts/1",
+    "STAT"    : "R+",
+    "TIME"    : "0:00",
+    "COMMAND" : "ps a"
 },{
-    "PID"  : "15952",
-    "TTY"  : "pts/2",
-    "TIME" : "00:00:00",
-    "CMD"  : "tclkit-8.6.3-mk"
+    "PID"     : "26584",
+    "TTY"     : "pts/1",
+    "STAT"    : "R+",
+    "TIME"    : "0:00",
+    "COMMAND" : "tclsh /usr/local/bin/sqawk -output json,indent=1 select PID, TTY, STAT, TIME, COMMAND from a trim=left fields=1,2,3,4,5-end header=1"
 }]
 ```
 
