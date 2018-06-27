@@ -33,6 +33,20 @@ Sqawk lets you be verbose to better document your script but aims to provide goo
 [Skip down](#more-examples) for more examples.
 
 
+# Table of contents
+
+* [Installation](#installation)
+* [Usage](#usage)
+  * [SQL](#sql)
+  * [Options](#options)
+    * [Global options](#global-options)
+      * [Output formats](#output-formats)
+    * [Per-file options](#per-file-options)
+      * [Input formats](#input-formats)
+* [More examples](#more-examples)
+* [License](#license)
+
+
 # Installation
 
 Sqawk requires Tcl 8.5 or newer, Tcllib, and SQLite version 3 bindings for Tcl installed.
