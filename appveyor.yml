@@ -1,10 +1,11 @@
 version: '{build}'
 install:
   - ps: Invoke-WebRequest http://kitcreator.rkeene.org/kits/89e1367677d2034c7477184dffc5dd4b23d11674/tclkit.exe -OutFile tclkit.exe
-  - ps: Invoke-WebRequest https://ci.appveyor.com/api/buildjobs/087d5bjjeu9b1v30/artifacts/jimsh.exe -OutFile jimsh.exe
+  - ps: Invoke-WebRequest https://ci.appveyor.com/api/buildjobs/lcn8k7533qpk3h9h/artifacts/jimsh.zip -OutFile jimsh.zip
   - ps: Invoke-WebRequest https://sqlite.org/2017/sqlite-tools-win32-x86-3210000.zip -OutFile sqlite-tools.zip
 build_script:
   - cmd: assemble.cmd /tclsh:tclkit.exe
+  - cmd: 7z e jimsh.zip
   - cmd: 7z e sqlite-tools.zip
 test_script:
   - cmd: tclkit.exe tests.tcl
