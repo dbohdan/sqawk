@@ -8,7 +8,7 @@ package require snit 2
 package require sqlite3
 
 namespace eval ::sqawk {
-    variable version 0.22.0
+    variable version 0.22.1
 }
 
 # The following comment is used by Assemble when bundling Sqawk's source code in
@@ -170,7 +170,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
         $sqawkObj eval $script
     } trap {POSIX EPIPE} {} {}
     $sqawkObj destroy
-    ::sqlite3 $databaseHandle close
+    $databaseHandle close
 }
 
 # If this is the main script...
