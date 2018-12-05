@@ -1,5 +1,4 @@
 language: generic
-sudo: false
 addons:
   apt:
     packages:
