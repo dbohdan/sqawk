@@ -1,27 +1,33 @@
 #!/usr/bin/env tclsh
 # Assemble, a tool for bundling Tcl source files.
-# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
+# Copyright (c) 2015, 2016, 2017, 2018, 2019 dbohdan
 # License: MIT
 
 namespace eval ::assemble {
-    variable version 0.2.0
+    variable version 0.3.0
 }
 
-proc ::assemble::read-file filename {
+proc ::assemble::read-text-file {filename {linePrefix {}}} {
     set ch [open $filename]
-    set result [read $ch]
+    set result {}
+    while {[gets $ch line] >= 0} {
+        append result $linePrefix$line\n
+    }
     close $ch
     return $result
 }
 
-proc ::assemble::header {text {charLeft { }} {charRight { }} {lineWidth 80}} {
+proc ::assemble::header {text {charLeft { }} {charRight { }}
+                         {linePrefix {}} {lineWidth 80}} {
     set text " $text "
     set length [string length $text]
-    set padding 2
+    set padding [expr { 2 + [string length $linePrefix] }]
     set countLeft [expr { ($lineWidth - $length) / 2 - $padding }]
     set countRight [expr { $lineWidth - $countLeft - $length - $padding }]
-    set result "# [string repeat $charLeft $countLeft]$text[string repeat \
-            $charRight $countRight]"
+
+    set result {}
+    append result "$linePrefix# [string repeat $charLeft $countLeft]"
+    append result $text[string repeat $charRight $countRight]
     return $result
 }
 
@@ -72,10 +78,10 @@ proc ::assemble::preprocess {text {definitions {ASSEMBLE 1}}} {
 proc ::assemble::include-sources text {
     set result {}
     foreach line [split $text \n] {
-        if {[regexp {^source\+ (.*)$} $line _ includeFilename]} {
-            append result \n[header "$includeFilename" = =]\n
-            append result [read-file $includeFilename]\n
-            append result [header "end $includeFilename" = =]\n
+        if {[regexp {^(\s*)source\+ (.*)$} $line _ whitespace filename]} {
+            append result \n[header $filename = = $whitespace]\n
+            append result [read-text-file $filename $whitespace]\n
+            append result [header "end $filename" = = $whitespace]\n
         } else {
             append result $line\n
         }
@@ -84,7 +90,7 @@ proc ::assemble::include-sources text {
 }
 
 proc ::assemble::assemble filename {
-    set main [read-file $filename]
+    set main [read-text-file $filename]
     set output [preprocess [include-sources $main] ]
     puts $output
 }
