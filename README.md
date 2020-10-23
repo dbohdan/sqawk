@@ -1,9 +1,11 @@
+# Sqawk
+
 ![A squawk](squawk.jpg)
 
 **Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
 
-# An example
+## An example
 
 Sqawk is invoked as follows:
 
@@ -14,14 +16,14 @@ where the `script` is your SQL.
 Here is an example of what it can do:
 
 ```sh
-# List all login shells used on the system.
+## List all login shells used on the system.
 sqawk -ORS '\n' 'select distinct shell from passwd order by shell' FS=: columns=username,password,uid,gui,info,home,shell table=passwd /etc/passwd
 ```
 
 or, equivalently,
 
 ```sh
-# Do the same thing.
+## Do the same thing.
 sqawk 'select distinct a7 from a order by a7' FS=: /etc/passwd
 ```
 
@@ -30,7 +32,7 @@ Sqawk lets you be verbose to better document your script but aims to provide goo
 [Skip down](#more-examples) for more examples.
 
 
-# Table of contents
+## Table of contents
 
 * [Installation](#installation)
 * [Usage](#usage)
@@ -44,7 +46,7 @@ Sqawk lets you be verbose to better document your script but aims to provide goo
 * [License](#license)
 
 
-# Installation
+## Installation
 
 Sqawk requires Tcl 8.5 or newer, Tcllib, and SQLite version 3 bindings for Tcl installed.
 
@@ -84,7 +86,7 @@ or on Windows,
     tclsh tests.tcl
 
 
-# Usage
+## Usage
 
 `sqawk [globaloptions] script [option=value ...] < filename`
 
@@ -94,15 +96,15 @@ or
 
 One of the filenames can be `-` for the standard input.
 
-## SQL
+### SQL
 
 A Sqawk `script` consists of one or more statements in the SQLite version 3 [dialect](https://www.sqlite.org/lang.html) of SQL.
 
 The default table names are `a` for the first input file, `b` for the second, `c` for the third, etc. You can change the table name for any file with a [file option](#per-file-options). The table name is used as a prefix in its columns' names; by default, the columns are named `a1`, `a2`, etc. in the table `a`; `b1`, `b2`, etc. in `b`; and so on. `a0` is the raw input text of the whole record for each record (i.e., one line of input with the default record separator of `\n`). `anr` in `a`, `bnr` in `b`, and so on contains the record number and is the primary key of its respective table. `anf`, `bnf`, and so on contain the field count for a given record.
 
-## Options
+### Options
 
-### Global options
+#### Global options
 
 These options affect all files.
 
@@ -120,7 +122,7 @@ These options affect all files.
 | -v | | Print the Sqawk version and exit. |
 | -1 | | Do not split records into fields. The same as `-FS 'x^'` (`x^` is a regular expression that matches nothing). Improves the performance somewhat for when you only want to operate on whole records (lines). |
 
-#### Output formats
+##### Output formats
 
 The following are the possible values for the command line option `-output`. Some formats have format options to further customize the output. The options are appended to the format name and separated from the format name and each other with commas, e.g., `-output json,arrays=0,indent=1`.
 
@@ -132,7 +134,7 @@ The following are the possible values for the command line option `-output`. Som
 | table | `alignments` or `align`, `margins`, `style` | `-output table,align=center left right`, `-output table,alignments=c l r` | Output plain text tables. The `table` serializer uses [Tabulate](https://wiki.tcl-lang.org/41682) to format the output as a table using box-drawing characters. Note that the default Unicode table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`. Use `style=loFi` to draw tables with plain ASCII characters instead. |
 | tcl | `dicts` (defaults to `0`) | `-output tcl,dicts=1` | Dump raw Tcl data structures. With the `tcl` serializer Sqawk outputs a list of lists if `dicts` is `0` and a list of dictionaries with the column names as keys if `dicts` is `1`. |
 
-### Per-file options
+#### Per-file options
 
 These options are set before a filename and only affect one input source (file).
 
@@ -148,7 +150,7 @@ These options are set before a filename and only affect one input source (file).
 | NF | `NF=20` | The same as the [global option](#global-options) -NF, but for one file (table). |
 | MNF | `MNF=crop` | The same as the [global option](#global-options) -MNF, but for one file (table). |
 
-#### Input formats
+##### Input formats
 
 A format option (`format=x`) selects the input parser with which Sqawk will parse the next input source. Formats can have multiple synonymous names or multiple names that configure the parser in different ways. Selecting an input format can enable additional per-file options that only work for that format.
 
@@ -159,32 +161,32 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 | `tcl` | `dicts` | `format=tcl dicts=true` | The value for `dicts` can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`. The input is treated as a Tcl list of either lists (`dicts=0`, default) or dictionaries (`dicts=1`). When `dicts` is `0`, each list becomes a record and each of its elements a field. If the table for the input file is `a`, its column `a0` will contain the full list, `a1` will contain the first element, `a2` the second element, and so on. When `dicts` is `1`, the first record contains every unique key found in all of the dictionaries. It is intended for use with the [file option](#per-file-options) `header=1`. The keys are in the same order they are in the first dictionary of the input. (Tcl dictionaries are ordered.) If some keys that aren't in the first dictionary but are in the subsequent ones, they follow those that are in the first dictionary in alphabetical order. Records from the second on contain the input dictionaries' values. They are mapped to fields according to how the keys are mapped in the first record. |
 
 
-# More examples
+## More examples
 
-## Sum up numbers
+### Sum up numbers
 
     find . -iname '*.jpg' -type f -printf '%s\n' | sqawk 'select sum(a1)/1024.0/1024 from a'
 
-## Line count
+### Line count
 
     sqawk -1 'select count(*) from a' < file.txt
 
-## Find lines that match a pattern
+### Find lines that match a pattern
 
     ls | sqawk -1 'select a0 from a where a0 like "%win%"'
 
-## Shuffle lines
+### Shuffle lines
 
     sqawk -1 'select a1 from a order by random()' < file
 
-## Pretty-print data as a table
+### Pretty-print data as a table
 
     ps | sqawk -output table \
          'select a1,a2,a3,a4 from a' \
          trim=left \
          fields=1,2,3,4-end
 
-### Sample output
+#### Sample output
 
 ```
 ┌─────┬─────┬────────┬───────────────┐
@@ -198,7 +200,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 └─────┴─────┴────────┴───────────────┘
 ```
 
-## Convert input to JSON objects
+### Convert input to JSON objects
 
 
     ps a | sqawk -output json,indent=1 \
@@ -207,7 +209,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
                  fields=1,2,3,4,5-end \
                  header=1
 
-### Sample output
+#### Sample output
 
 ```
 [{
@@ -237,24 +239,24 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 }]
 ```
 
-## Find duplicate lines
+### Find duplicate lines
 
 Print duplicate lines and how many times they are repeated.
 
     sqawk -1 -OFS ' -- ' 'select a0, count(*) from a group by a0 having count(*) > 1' < file
 
-### Sample output
+#### Sample output
 
     13 -- 2
     16 -- 3
     83 -- 2
     100 -- 2
 
-## Remove blank lines
+### Remove blank lines
 
     sqawk -1 -RS '[\n]+' 'select a0 from a' < file
 
-## Sum up numbers with the same key
+### Sum up numbers with the same key
 
     sqawk -FS , -OFS , 'select a1, sum(a2) from a group by a1' data
 
@@ -262,7 +264,7 @@ This is the equivalent of the Awk code
 
     awk 'BEGIN {FS = OFS = ","} {s[$1] += $2} END {for (key in s) {print key, s[key]}}' data
 
-### Input
+#### Input
 
 ```
 1015,5
@@ -277,7 +279,7 @@ This is the equivalent of the Awk code
 1009,1
 ```
 
-### Output
+#### Output
 
 ```
 1004,10
@@ -287,9 +289,9 @@ This is the equivalent of the Awk code
 1035,28
 ```
 
-## Combine data from two files
+### Combine data from two files
 
-### Commands
+#### Commands
 
 This example joins the data from two metadata files generated from the [happypenguin.com 2013 data dump](https://archive.org/details/happypenguin_xml_dump_2013). You do not need to download the data dump to try the query; `MD5SUMS` and `du-bytes` are included in the directory [`examples/hp/`](./examples/hp/).
 
@@ -300,9 +302,9 @@ This example joins the data from two metadata files generated from the [happypen
     # Perform query
     sqawk 'select a1, b1, a2 from a inner join b on a2 = b2 where b1 < 10000 order by b1' MD5SUMS du-bytes
 
-### Input files
+#### Input files
 
-#### MD5SUMS
+##### MD5SUMS
 
 ```
 d2e7d4d1c7587b40ef7e6637d8d777bc  0005.jpg
@@ -316,7 +318,7 @@ e2ab70817194584ab6fe2efc3d8987f6  0.0.6-settings.png
 [...]
 ```
 
-#### du-bytes
+##### du-bytes
 
 ```
 136229  0005.jpg
@@ -330,7 +332,7 @@ e2ab70817194584ab6fe2efc3d8987f6  0.0.6-settings.png
 [...]
 ```
 
-### Output
+#### Output
 
 ```
 d50700db41035eb74580decf83f83184 615 z81.png
@@ -347,7 +349,7 @@ bf60508db16a92a46bbd4107f15730cd 9946 glad_shot01.jpg
 ```
 
 
-# License
+## License
 
 MIT.
 
