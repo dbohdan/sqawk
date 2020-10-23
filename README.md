@@ -1,8 +1,5 @@
 ![A squawk](squawk.jpg)
 
-[![Travis CI build status](https://travis-ci.org/dbohdan/sqawk.svg?branch=master)](https://travis-ci.org/dbohdan/sqawk)
-[![AppVeyor CI build status](https://ci.appveyor.com/api/projects/status/github/dbohdan/sqawk?branch=master&svg=true)](https://ci.appveyor.com/project/dbohdan/sqawk)
-
 **Sqawk** is an [Awk](http://awk.info/)-like program that uses SQL and can combine data from multiple files. It is powered by SQLite.
 
 
