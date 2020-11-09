@@ -8,12 +8,15 @@ namespace eval ::sqawk::parsers::tcl {
     }
     variable options {
         kv 0
+        lines 0
     }
 }
 
 ::snit::type ::sqawk::parsers::tcl::parser {
     variable kv
+    variable linesMode
 
+    variable ch
     variable data
     variable i
     variable keys
@@ -21,8 +24,23 @@ namespace eval ::sqawk::parsers::tcl {
 
     constructor {channel options} {
         set kv [dict get $options kv]
+        set linesMode [dict get $options lines]
+
         set i [expr { $kv ? -1 : 0 }]
-        set data [read $channel]
+        if {$linesMode} {
+            if {$kv} {
+                set lines [split [string trim [read $channel]] \n]
+                set data [lmap line $lines {
+                    if {[regexp {^\s*$} $line]} continue
+                    set line
+                }]
+            } else {
+                set ch $channel
+                set data %NEVER_USED%
+            }
+        } else {
+            set data [read $channel]
+        }
         set len [llength $data]
     }
 
@@ -32,8 +50,22 @@ namespace eval ::sqawk::parsers::tcl {
         }
 
         if {!$kv} {
-            set list [lindex $data $i]
-            incr i
+            if {$linesMode} {
+                set line {}
+                while {[set blank [regexp {^\s*$} $line]] && ![eof $ch]} {
+                    gets $ch line
+                }
+
+                if {$blank && [eof $ch]} {
+                    return -code break
+                }
+
+                set list $line
+            } else {
+                set list [lindex $data $i]
+                incr i
+            }
+
             return [list $list {*}$list]
         }
 

@@ -580,6 +580,61 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "1|2|b a|b|a|\n2|2| b  2|2||\n3|2|a   1  ||1|"
 
+    tcltest::test format-2.4 {Tcl data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=tcl kv=false lines=true \
+          << "1 2 3\na b\ntrue false null"
+    } -cleanup {
+        uninit
+    } -match glob -result \
+        "1|3|1 2 3|1|2|3|*\n2|2|a b|a|b|*\n3|3|true\
+         false null|true|false|null|*"
+
+    tcltest::test format-2.5 {Tcl data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=tcl kv=on lines=true header=1 \
+          << "k1 1 k2 2 k3 3\n  \n\nk1 a k2 b"
+    } -cleanup {
+        uninit
+    } -match regexp -result \
+        [string map [list | \\| %NL% \n] \
+            {1|3|k1 1 k2 2 k3 3|1|2|3|+%NL%2|3|k1 a k2 b|a|b|+}]
+
+    tcltest::test format-2.6 {Tcl data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=tcl kv=0 lines=1 << "100\n\n  \t\n101"
+    } -cleanup {
+        uninit
+    } -match glob -result 1|1|100|100|\n2|1|101|101|
+
+    tcltest::test format-2.7 {Tcl data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=tcl kv=0 lines=1 << "100\n\n  \t\n101\n \n"
+    } -cleanup {
+        uninit
+    } -match glob -result 1|1|100|100|\n2|1|101|101|
+
+    tcltest::test format-2.8 {Tcl data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=tcl kv=0 lines=1 << {}
+    } -cleanup {
+        uninit
+    } -result {}
 
     tcltest::test format-3.1 {JSON data input} -setup {
         init
@@ -629,19 +684,23 @@ namespace eval ::sqawk::tests {
     tcltest::test format-3.5 {JSON data input} -setup {
         init
     } -body {
-        sqawk-tcl -OFS \\| -NF 2 {
+        sqawk-tcl -OFS \\| {
             select * from a
-        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]"
+        } format=json kv=on lines=true header=1 \
+          << [format {{"k1":1,"k2":2,"k3":3}%1$s \
+                      %1$s%1$s{"k1":"a","k2":"b"}} \n]
     } -cleanup {
         uninit
-    } -match glob -result 1|1|100|100|\n2|1|101|101|
+    } -match regexp -result \
+        [string map [list | \\| %NL% \n] \
+            {1|3|k1 1 k2 2 k3 3|1|2|3|+%NL%2|3|k1 a k2 b|a|b|+}]
 
     tcltest::test format-3.6 {JSON data input} -setup {
         init
     } -body {
         sqawk-tcl -OFS \\| -NF 2 {
             select * from a
-        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]\n \n"
+        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]"
     } -cleanup {
         uninit
     } -match glob -result 1|1|100|100|\n2|1|101|101|
@@ -651,23 +710,20 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -OFS \\| -NF 2 {
             select * from a
+        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]\n \n"
+    } -cleanup {
+        uninit
+    } -match glob -result 1|1|100|100|\n2|1|101|101|
+
+    tcltest::test format-3.8 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
         } format=json kv=0 lines=1 << {}
     } -cleanup {
         uninit
     } -result {}
-
-    tcltest::test format-3.5 {JSON data input} -setup {
-        init
-    } -body {
-        sqawk-tcl -OFS \\| {
-            select * from a
-        } format=json kv=on lines=true header=1 \
-          << [format {{"k1":1,"k2":2,"k3":3}%1$s \
-                      %1$s%1$s{"k1":"a","k2":"b"}} \n]
-    } -cleanup {
-        uninit
-    } -match glob -result \
-        "1|3|k1 1 k2 2 k3 3|1|2|3|*\n2|3|k1 a k2 b|a|b|*"
 
     tcltest::test output-1.1 {Default output format} -setup {
         init filename "line 1\nline 2\nline 3"
