@@ -687,6 +687,17 @@ namespace eval ::sqawk::tests {
         uninit
     } -result {{a1 1 a2 2 a3 {Hello, World!} a4 { }}}
 
+    tcltest::test output-3.3 {Tcl output} -setup {
+        init output3File "1\t2\nHello, World!\t "
+    } -body {
+        sqawk-tcl \
+                -FS \t \
+                -output tcl,kv=1,pretty=yes \
+                {select a1,a2 from a} $output3File
+    } -cleanup {
+        uninit
+    } -result "{a1 1 a2 2}\n{a1 {Hello, World!} a2 { }}"
+
     tcltest::test output-4.1 {Table output} -constraints {
         utf8
     }  -setup {
@@ -777,6 +788,30 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -result {[["a","b","c"],["d","e","f"],["g","h","i"]]}
+
+    tcltest::test output-5.3 {JSON output}  -setup {
+        init output4File a,b\nc,d\ne,f
+    } -body {
+        sqawk-tcl \
+                -FS , \
+                -output json,kv=true,pretty=true \
+                {select a1,a2,a3 from a} $output4File
+    } -cleanup {
+        uninit
+    } -result \
+{[{
+    "a1" : "a",
+    "a2" : "b",
+    "a3" : ""
+},{
+    "a1" : "c",
+    "a2" : "d",
+    "a3" : ""
+},{
+    "a1" : "e",
+    "a2" : "f",
+    "a3" : ""
+}]}
 
     tcltest::test trim-1.1 {trim option} -setup {
         init trim1File "   a  \n"
