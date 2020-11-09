@@ -141,6 +141,23 @@ proc ::sqawk::script::create-database {database file} {
     } else {
         ::sqlite3 $database $file
     }
+
+    foreach {name script} {
+        dict_exists       ::sqawk::dict-exists
+        dict_get          ::sqawk::dict-get
+        lindex            ::lindex
+        llength           ::llength
+        lrange            ::lrange
+        regexp            ::regexp
+        regsub            ::regsub
+    } {
+        # Compatibility.
+        try {
+            $database function $name -deterministic $script
+        } on error {} {
+            $database function $name $script
+        }
+    }
 }
 
 proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {

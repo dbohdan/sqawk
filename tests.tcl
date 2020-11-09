@@ -928,7 +928,7 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "1.0 a\n2.0 b\nc "
 
-    tcltest::test datatypes-1.4 {Datatypes}  -setup {
+    tcltest::test datatypes-1.4 {Datatypes} -setup {
         init datatypes1File "001 a\n002 b\nc"
     } -body {
         sqawk-tcl {select a1,a2 from a} datatypes=null,blob $datatypes1File
@@ -936,13 +936,63 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "001 a\n002 b\nc "
 
-    tcltest::test datatypes-1.5 {Datatypes}  -setup {
+    tcltest::test datatypes-1.5 {Datatypes} -setup {
         init datatypes1File "001 a\n002 b\nc"
     } -body {
         sqawk-tcl {select a1,a2 from a} datatypes=text,text $datatypes1File
     } -cleanup {
         uninit
     } -result "001 a\n002 b\nc "
+
+    tcltest::test custom-functions-1.1 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select lindex("{} {foo bar} baz", 1, 1)}
+    } -cleanup {
+        uninit
+    } -result bar
+
+    tcltest::test custom-functions-1.2 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select dict_get(
+            "k1 v1 k2 v2 k3 {nes ted}", "k3", "nes"
+        )}
+    } -cleanup {
+        uninit
+    } -result ted
+
+    tcltest::test custom-functions-1.3 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select regsub("-all", "[lz]", "hello", "1")}
+    } -cleanup {
+        uninit
+    } -result he11o
+
+    tcltest::test custom-functions-1.4 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select regexp("a", "aaa"), regexp("b", "aaa")}
+    } -cleanup {
+        uninit
+    } -result {1 0}
+
+    tcltest::test custom-functions-1.5 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select llength("k1 v1 k2 v2 k3 {nes ted}")}
+    } -cleanup {
+        uninit
+    } -result 6
+
+    tcltest::test custom-functions-1.6 {Custom SQLite functions} -setup {
+        init
+    } -body {
+        sqawk-tcl {select lrange("k1 v1 k2 v2 k3 {nes ted}", 4, "5")}
+    } -cleanup {
+        uninit
+    } -result {k3 {nes ted}}
 
     # NF tests
 
@@ -1261,6 +1311,7 @@ namespace eval ::sqawk::tests {
     } -match regexp -result {CREATE TABLE a \(\n    anr\
         INTEGER PRIMARY KEY,\n    anf INTEGER,\n    a0 TEXT,\n    a1\
         INTEGER,\n    a2 INTEGER, a3 INTEGER, a4 INTEGER\);}
+
     # Tabulate tests
 
     proc tabulate-tcl args {

@@ -34,3 +34,12 @@ proc ::sqawk::override-keys {dictionary override} {
     }
     return $dictionary
 }
+
+# Helper procs to use as functions in SQLite.
+proc ::sqawk::dict-exists {dict args} {
+    return [dict exists $dict {*}$args]
+}
+
+proc ::sqawk::dict-get {dict args} {
+    return [dict get $dict {*}$args]
+}
