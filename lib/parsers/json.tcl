@@ -16,7 +16,9 @@ namespace eval ::sqawk::parsers::json {
 
 ::snit::type ::sqawk::parsers::json::parser {
     variable kv
+    variable linesMode
 
+    variable ch
     variable data
     variable i
     variable keys
@@ -24,14 +26,21 @@ namespace eval ::sqawk::parsers::json {
 
     constructor {channel options} {
         set kv [dict get $options kv]
+        set linesMode [dict get $options lines]
         set i [expr { $kv ? -1 : 0 }]
 
-        if {[dict get $options lines]} {
-            set lines [split [string trim [read $channel]] \n]
-            set data [lmap line $lines {
-                if {[regexp {^\s*$} $line]} continue
-                json::json2dict $line
-            }]
+        if {$linesMode} {
+            if {$kv} {
+                set lines [split [string trim [read $channel]] \n]
+                set data [lmap line $lines {
+                    if {[regexp {^\s*$} $line]} continue
+                    json::json2dict $line
+                }]
+            } else {
+                # We ignore $data and $len in non-kv lines mode.
+                set ch $channel
+                set data %NEVER_USED%
+            }
         } else {
             set data [json::json2dict [read $channel]]
         }
@@ -45,9 +54,22 @@ namespace eval ::sqawk::parsers::json {
         }
 
         if {!$kv} {
-            set array [lindex $data $i]
+            if {$linesMode} {
+                set line {}
+                while {[set blank [regexp {^\s*$} $line]] && ![eof $ch]} {
+                    gets $ch line
+                }
 
-            incr i
+                if {$blank && [eof $ch]} {
+                    return -code break
+                }
+
+                set array [json::json2dict $line]
+            } else {
+                set array [lindex $data $i]
+                incr i
+            }
+
             return [list $array {*}$array]
         }
 

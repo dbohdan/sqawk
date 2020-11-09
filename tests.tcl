@@ -629,6 +629,36 @@ namespace eval ::sqawk::tests {
     tcltest::test format-3.5 {JSON data input} -setup {
         init
     } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]"
+    } -cleanup {
+        uninit
+    } -match glob -result 1|1|100|100|\n2|1|101|101|
+
+    tcltest::test format-3.6 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=json kv=0 lines=1 << "\[100\]\n\n  \t\n\[101\]\n \n"
+    } -cleanup {
+        uninit
+    } -match glob -result 1|1|100|100|\n2|1|101|101|
+
+    tcltest::test format-3.7 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 2 {
+            select * from a
+        } format=json kv=0 lines=1 << {}
+    } -cleanup {
+        uninit
+    } -result {}
+
+    tcltest::test format-3.5 {JSON data input} -setup {
+        init
+    } -body {
         sqawk-tcl -OFS \\| {
             select * from a
         } format=json kv=on lines=true header=1 \
