@@ -9,13 +9,13 @@ namespace eval ::sqawk::parsers::json {
         json
     }
     variable options {
-        arrays 0
+        kv 1
         lines 0
     }
 }
 
 ::snit::type ::sqawk::parsers::json::parser {
-    variable useArrays
+    variable kv
 
     variable data
     variable i
@@ -23,8 +23,8 @@ namespace eval ::sqawk::parsers::json {
     variable len
 
     constructor {channel options} {
-        set useArrays [dict get $options arrays]
-        set i [expr { $useArrays ? 0 : -1 }]
+        set kv [dict get $options kv]
+        set i [expr { $kv ? -1 : 0 }]
 
         if {[dict get $options lines]} {
             set lines [split [string trim [read $channel]] \n]
@@ -44,7 +44,7 @@ namespace eval ::sqawk::parsers::json {
             return -code break
         }
 
-        if {$useArrays} {
+        if {!$kv} {
             set array [lindex $data $i]
 
             incr i

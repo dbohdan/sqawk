@@ -7,12 +7,12 @@ namespace eval ::sqawk::parsers::tcl {
         tcl
     }
     variable options {
-        dicts 0
+        kv 0
     }
 }
 
 ::snit::type ::sqawk::parsers::tcl::parser {
-    variable useDicts
+    variable kv
 
     variable data
     variable i
@@ -20,8 +20,8 @@ namespace eval ::sqawk::parsers::tcl {
     variable len
 
     constructor {channel options} {
-        set useDicts [dict get $options dicts]
-        set i [expr { $useDicts ? -1 : 0 }]
+        set kv [dict get $options kv]
+        set i [expr { $kv ? -1 : 0 }]
         set data [read $channel]
         set len [llength $data]
     }
@@ -31,7 +31,7 @@ namespace eval ::sqawk::parsers::tcl {
             return -code break
         }
 
-        if {!$useDicts} {
+        if {!$kv} {
             set list [lindex $data $i]
             incr i
             return [list $list {*}$list]

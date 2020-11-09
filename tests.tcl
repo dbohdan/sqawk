@@ -565,7 +565,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -output json {
             select foo, bar, baz from a
-        } format=tcl dicts=1 header=1 $filename
+        } format=tcl kv=1 header=1 $filename
     } -cleanup {
         uninit
     } -result {[{"foo":"1","bar":"2","baz":""},{"foo":"3","bar":"4","baz":"5"}]}
@@ -575,7 +575,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -OFS \\| -NF 3 {
             select * from a
-        } format=tcl dicts=1 << {{ b  2} {a   1  }}
+        } format=tcl kv=1 << {{ b  2} {a   1  }}
     } -cleanup {
         uninit
     } -result "1|2|b a|b|a|\n2|2| b  2|2||\n3|2|a   1  ||1|"
@@ -586,7 +586,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -OFS \\| {
             select * from a
-        } format=json arrays=1 << {[[1, 2, 3,   4,   5       ],[6, 7, 8, 9, 10]]}
+        } format=json kv=0 << {[[1, 2, 3,   4,   5       ],[6, 7, 8, 9, 10]]}
     } -cleanup {
         uninit
     } -result [format %s\n%s \
@@ -618,7 +618,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -OFS \\| {
             select * from a
-        } format=json arrays=true lines=true \
+        } format=json kv=false lines=true \
           << [format {[1,2,3]%1$s["a","b"]%1$s[true,false,null]} \n]
     } -cleanup {
         uninit
@@ -631,7 +631,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl -OFS \\| {
             select * from a
-        } format=json arrays=off lines=true header=1 \
+        } format=json kv=on lines=true header=1 \
           << [format {{"k1":1,"k2":2,"k3":3}%1$s \
                       %1$s%1$s{"k1":"a","k2":"b"}} \n]
     } -cleanup {
@@ -681,7 +681,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl \
                 -FS \t \
-                -output tcl,dicts=1 \
+                -output tcl,kv=1 \
                 {select a1,a2,a3,a4 from a} $output3File
     } -cleanup {
         uninit
@@ -772,7 +772,7 @@ namespace eval ::sqawk::tests {
     } -body {
         sqawk-tcl \
                 -FS , \
-                -output json,arrays=1 \
+                -output json,kv=0 \
                 {select a1,a2,a3 from a} $output4File
     } -cleanup {
         uninit

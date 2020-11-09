@@ -1,5 +1,5 @@
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
+# Copyright (c) 2015, 2016, 2017, 2018, 2020 D. Bohdan
 # License: MIT
 
 namespace eval ::sqawk::serializers::json {
@@ -7,23 +7,23 @@ namespace eval ::sqawk::serializers::json {
         json
     }
     variable options {
-        arrays 0
         indent 0
+        kv 1
     }
 }
 
 # Convert records to JSON.
 ::snit::type ::sqawk::serializers::json::serializer {
     variable ch
-    variable useArrays
     variable first 1
     variable initalized 0
+    variable kv
 
     constructor {channel options} {
         package require json::write
 
         set ch $channel
-        set useArrays [dict get $options arrays]
+        set kv [dict get $options kv]
         ::json::write indented [dict get $options indent]
 
         puts -nonewline $ch \[
@@ -39,10 +39,10 @@ namespace eval ::sqawk::serializers::json {
             lappend object $key [::json::write string $value]
         }
 
-        if {$useArrays} {
-            append fragment [::json::write array {*}[dict values $object]]
-        } else {
+        if {$kv} {
             append fragment [::json::write object {*}$object]
+        } else {
+            append fragment [::json::write array {*}[dict values $object]]
         }
 
         puts -nonewline $ch $fragment

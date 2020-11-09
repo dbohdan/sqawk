@@ -7,21 +7,21 @@ namespace eval ::sqawk::serializers::tcl {
         tcl
     }
     variable options {
-        dicts 0
+        kv 0
     }
 }
 
 # A (near) pass-through serializer.
 ::snit::type ::sqawk::serializers::tcl::serializer {
     variable ch
-    variable useDicts
+    variable kv
 
     variable first 1
     variable initialized 0
 
     constructor {channel options} {
         set ch $channel
-        set useDicts [dict get $options dicts]
+        set kv [dict get $options kv]
         set initialized 1
     }
 
@@ -29,7 +29,7 @@ namespace eval ::sqawk::serializers::tcl {
         set s [expr {$first ? {} : { }}]
         set first 0
 
-        if {$useDicts} {
+        if {$kv} {
             append s [list $record]
         } else {
             append s [list [dict values $record]]
