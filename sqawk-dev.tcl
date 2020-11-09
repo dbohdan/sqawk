@@ -1,14 +1,15 @@
-#!/usr/bin/env tclsh
+#! /usr/bin/env tclsh
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
+# Copyright (c) 2015, 2016, 2017, 2018, 2020 D. Bohdan
 # License: MIT
-package require Tcl 8.5
+
+package require Tcl 8.6
 package require cmdline
 package require snit 2
 package require sqlite3
 
 namespace eval ::sqawk {
-    variable version 0.22.1
+    variable version 0.23.0
 }
 
 # The following comment is used by Assemble when bundling Sqawk's source code in

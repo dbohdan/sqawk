@@ -48,7 +48,7 @@ Sqawk lets you be verbose to better document your script but aims to provide goo
 
 ## Installation
 
-Sqawk requires Tcl 8.5 or newer, Tcllib, and SQLite version 3 bindings for Tcl installed.
+Sqawk requires Tcl 8.6 or newer, Tcllib, and SQLite version 3 bindings for Tcl installed.
 
 To install these dependencies on **Debian** and **Ubuntu** run the following command:
 
@@ -64,7 +64,7 @@ On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
     sudo pkg install tcl86 tcllib tcl-sqlite3
     sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
 
-On **Windows** install [Magicsplat Tcl/Tk for Windows](http://www.magicsplat.com/tcl-installer/) (Windows 7 or later) or [ActiveTcl](https://www.activestate.com/activetcl/downloads) 8.5 from ActiveState (Windows XP/Vista).
+On **Windows** install [Magicsplat Tcl/Tk for Windows](http://www.magicsplat.com/tcl-installer/) (Windows 7 or later).
 
 On **macOS** use [MacPorts](https://www.macports.org/) or install [ActiveTcl](https://www.activestate.com/activetcl/downloads) for the Mac. With MacPorts:
 
