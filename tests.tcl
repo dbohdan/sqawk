@@ -1,6 +1,6 @@
-#!/usr/bin/env tclsh
+#! /usr/bin/env tclsh
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
+# Copyright (c) 2015, 2016, 2017, 2018, 2020 D. Bohdan
 # License: MIT
 
 package require fileutil
@@ -583,6 +583,39 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -result "1|2|b a|b|a|\n2|2| b  2|2||\n3|2|a   1  ||1|"
+
+
+    tcltest::test format-3.1 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=json arrays=1 << {[[1, 2, 3,   4,   5       ],[6, 7, 8, 9, 10]]}
+    } -cleanup {
+        uninit
+    } -result [format %s\n%s \
+            {1|5|1 2 3 4 5|1|2|3|4|5|||||} \
+            {2|5|6 7 8 9 10|6|7|8|9|10|||||}]
+
+    tcltest::test format-3.2 {JSON data input} -setup {
+        init filename {[{"foo":1,"bar":2},{"foo":3,"bar":4,"baz":5}]}
+    } -body {
+        sqawk-tcl -output json {
+            select foo, bar, baz from a
+        } format=json header=1 $filename
+    } -cleanup {
+        uninit
+    } -result {[{"foo":"1","bar":"2","baz":""},{"foo":"3","bar":"4","baz":"5"}]}
+
+    tcltest::test format-3.3 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| -NF 3 {
+            select * from a
+        } format=json << {[{"b":  2}, {"a":   1   }]}
+    } -cleanup {
+        uninit
+    } -result "1|2|b a|b|a|\n2|2|b 2|2||\n3|2|a 1||1|"
 
     tcltest::test output-1.1 {Default output format} -setup {
         init filename "line 1\nline 2\nline 3"
