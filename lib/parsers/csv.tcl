@@ -46,9 +46,10 @@ namespace eval ::sqawk::parsers::csv {
                 $quote \
             ]]
         } on error {errorMessage errorOptions} {
-            dict set errorOptions \
-                    -errorinfo "CSV decoding error:\
-                            [dict get $errorOptions -errorinfo]"
+            dict set errorOptions -errorinfo [list \
+                CSV decoding error: \
+                [dict get $errorOptions -errorinfo] \
+            ]
             return -options $errorOptions $errorMessage
         }
         return $row

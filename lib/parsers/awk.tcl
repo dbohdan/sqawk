@@ -25,7 +25,7 @@ proc ::sqawk::parsers::awk::sepsplit {str regexp {includeSeparators 1}} {
     }
     # Thanks to KBK for the idea.
     if {[regexp $regexp {}]} {
-        error "splitting on regexp \"$regexp\" would cause infinite loop"
+        error [list splitting on regexp $regexp would cause infinite loop]
     }
 
     # Split $str into a list of fields and separators.
@@ -65,7 +65,7 @@ proc ::sqawk::parsers::awk::trim-record {record mode} {
         left    { set record [string trimleft $record]  }
         right   { set record [string trimright $record] }
         none    {}
-        default { error "unknown mode: \"$mode\""       }
+        default { error [list unknown mode: $mode]      }
     }
     return $record
 }
@@ -97,7 +97,7 @@ proc ::sqawk::parsers::awk::map {fieldsAndSeps fieldMap} {
             }
             lappend columns [join [lrange $fieldsAndSeps $from $to] {}]
         } else {
-            error "unknown mapping: \"$mapping\""
+            error [list unknown mapping: $mapping]
         }
 
         incr currentColumn
@@ -127,7 +127,7 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
                     [string range $fields {*}$rangeFrom] \
                     [string range $fields {*}$rangeTo]]
         } else {
-            error "can't parse item \"$item\""
+            error [list can't parse item $item]
         }
         lassign $overall _ start
     }
@@ -160,10 +160,10 @@ proc ::sqawk::parsers::awk::parseFieldMap fields {
 
         # Thanks to KBK for the idea.
         if {[regexp $RS {}]} {
-            error "splitting on RS regexp \"$RS\" would cause infinite loop"
+            error [list splitting on RS regexp $RS would cause infinite loop]
         }
         if {[regexp $FS {}]} {
-            error "splitting on FS regexp \"$FS\" would cause infinite loop"
+            error [list splitting on FS regexp $FS would cause infinite loop]
         }
     }
 

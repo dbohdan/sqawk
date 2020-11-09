@@ -46,7 +46,7 @@ namespace eval ::sqawk {}
         }
         set possibleOpts [dict keys $optToDict]
         if {$option ni $possibleOpts} {
-            error "Set-and-update-format-list can't set the option \"$option\""
+            error [list Set-and-update-format-list can't set option $option]
         }
         set options($option) $value
 
@@ -65,7 +65,7 @@ namespace eval ::sqawk {}
         try {
             set ns [dict get $formatToParser $format]
         } on error {} {
-            error "unknown input format: \"$format\""
+            error [list unknown input format: $format]
         }
         set parseOptions [set ${ns}::options]
 
@@ -95,7 +95,7 @@ namespace eval ::sqawk {}
         try {
             set ns [dict get $formatToSerializer $formatName]
         } on error {} {
-            error "unknown output format: \"$formatName\""
+            error [list unknown output format: $formatName]
         }
 
         # Get the dict containing the options the serializer accepts with their
@@ -124,8 +124,7 @@ namespace eval ::sqawk {}
             if {[dict exists $so $key]} {
                 dict set so $key $value
             } else {
-                error "unknown option for output format\
-                        \"$formatName\":\ \"$key\""
+                error [list unknown option $key for output format $formatName]
             }
         }
 
@@ -144,7 +143,6 @@ namespace eval ::sqawk {}
         ::sqawk::dict-ensure-default fileOptions csvquote \"
         ::sqawk::dict-ensure-default fileOptions csvsep ,
         ::sqawk::dict-ensure-default fileOptions format awk
-        ::sqawk::dict-ensure-default fileOptions merge {}
         ::sqawk::dict-ensure-default fileOptions prefix \
                 [dict get $fileOptions table]
 

@@ -29,8 +29,8 @@ namespace eval ::sqawk::serializers::table {
 
         if {([dict get $options align] ne {}) &&
                 ([dict get $options alignments] ne {})} {
-            error "can't use the synonym options \"align\" and \"alignments\"\
-                    together"
+            error {can't use synonym options "align" and "alignments"\
+                   together}
         } elseif {[dict get $options align] ne {}} {
             set alignments [dict get $options align]
         } else {

@@ -107,7 +107,7 @@ proc ::tabulate::options::parse-dsl tokens {
                 }
             }
             default {
-                error "unknown keyword: \"[current]\"; expected \"store\""
+                error [list unknown keyword: [current]; expected store]
             }
         }
         lappend result $item
@@ -133,7 +133,7 @@ proc ::tabulate::options::current {} {
 proc ::tabulate::options::expect expected {
     set current [uplevel 1 current]
     if {$current ne $expected} {
-        error "expected \"$expected\" but got \"$current\""
+        error [list expected $expected but got $current]
     }
 }
 
@@ -157,7 +157,7 @@ proc ::tabulate::options::process-parsed {opts declaredOptions} {
             set keyIndex [lsearch -exact $opts $flag]
             if {$keyIndex > -1} {
                 if {$keyIndex + 1 == [llength $opts]} {
-                    error "no value given for option \"$flag\""
+                    error [list no value given for option $flag]
                 }
                 set var [lindex $opts $keyIndex+1]
 
@@ -174,17 +174,17 @@ proc ::tabulate::options::process-parsed {opts declaredOptions} {
             if {[dict get $item useDefaultValue]} {
                 set var [dict get $item defaultValue]
             } else {
-                error "no option $currentOptionSynonyms given"
+                error [list no option $currentOptionSynonyms given]
             }
         } elseif {[llength $found] > 1} {
-            error "can't use the flags \"[join $found {", "}]\" together"
+            error [list can't use the flags $found together]
         }
 
     }
 
     # Ensure $opts is empty.
     if {[llength $opts] > 0} {
-        error "unknown option(s): $opts; can use [join $possibleOptions { }]"
+        error [list unknown option(s): $opts; can use: $possibleOptions]
     }
 }
 
@@ -315,7 +315,7 @@ proc ::tabulate::formatRow args {
                 set rightPadding $margins
             }
             default {
-                error "unknown alignment: \"$alignment\""
+                error [list unknown alignment: $alignment]
             }
         }
         append result [string repeat [dict get $substyle padding] $leftPadding]

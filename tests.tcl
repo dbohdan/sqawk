@@ -96,7 +96,7 @@ namespace eval ::sqawk::tests {
         sqawk-tcl -1 {select a0 from a} missing-file
     } -cleanup {
         uninit
-    } -returnCodes 1 -match glob -result {*can't find file "missing-file"*}
+    } -returnCodes 1 -match glob -result {*can't find file missing-file*}
 
     proc difference {filename1 filename2} {
         set lines1 [split [::fileutil::cat $filename1] \n]
@@ -159,7 +159,7 @@ namespace eval ::sqawk::tests {
     } -returnCodes {
         error
     } -result {Error in constructor:\
-               splitting on FS regexp "|" would cause infinite loop}
+               splitting on FS regexp | would cause infinite loop}
 
     tcltest::test join-1.1 {JOIN on two files from examples/hp/} -setup {
         init filename {}
@@ -760,8 +760,8 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -returnCodes 1 \
-      -result "can't use the synonym options \"align\" and \"alignments\"\
-                    together*" \
+      -result {can't use synonym options "align" and "alignments"\
+               together*} \
       -match glob
 
     tcltest::test output-5.1 {JSON output} -setup {
@@ -1263,7 +1263,7 @@ namespace eval ::sqawk::tests {
             {select * from a} $filename
     } -cleanup {
         uninit
-    } -returnCodes 1 -match glob -result {invalid MNF value: "foo"*}
+    } -returnCodes 1 -match glob -result {invalid MNF value: foo*}
 
     tcltest::test dbfile-1.1 {Database file} -constraints {
         sqlite3cli
@@ -1509,7 +1509,7 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -returnCodes 1 \
-      -result {can't use the flags "-alignments", "-align" together}
+      -result {can't use the flags {-alignments -align} together}
 
     tcltest::test tabulate-3.0 {format-flag-synonyms} -setup {
         init

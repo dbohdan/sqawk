@@ -29,7 +29,7 @@ namespace eval ::sqawk {}
 
     method Check-modenf {option value} {
         if {$value ni {crop error expand}} {
-            error "invalid MNF value: \"$value\""
+            error [list invalid MNF value: $value]
         }
     }
 
