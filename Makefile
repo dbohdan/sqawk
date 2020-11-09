@@ -23,6 +23,7 @@ installdirs:
 
 sqawk:
 	tclsh tools/assemble.tcl sqawk-dev.tcl > sqawk.tcl
+	chmod +x sqawk.tcl
 
 test: sqawk
 	tclsh tests.tcl
