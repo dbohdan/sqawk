@@ -10,6 +10,7 @@ namespace eval ::sqawk::parsers::json {
     }
     variable options {
         arrays 0
+        lines 0
     }
 }
 
@@ -24,7 +25,17 @@ namespace eval ::sqawk::parsers::json {
     constructor {channel options} {
         set useArrays [dict get $options arrays]
         set i [expr { $useArrays ? 0 : -1 }]
-        set data [json::json2dict [read $channel]]
+
+        if {[dict get $options lines]} {
+            set lines [split [string trim [read $channel]] \n]
+            set data [lmap line $lines {
+                if {[regexp {^\s*$} $line]} continue
+                json::json2dict $line
+            }]
+        } else {
+            set data [json::json2dict [read $channel]]
+        }
+
         set len [llength $data]
     }
 

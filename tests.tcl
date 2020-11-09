@@ -617,6 +617,32 @@ namespace eval ::sqawk::tests {
         uninit
     } -result "1|2|b a|b|a|\n2|2|b 2|2||\n3|2|a 1||1|"
 
+    tcltest::test format-3.4 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=json arrays=true lines=true \
+          << [format {[1,2,3]%1$s["a","b"]%1$s[true,false,null]} \n]
+    } -cleanup {
+        uninit
+    } -match glob -result \
+        "1|3|1 2 3|1|2|3|*\n2|2|a b|a|b|*\n3|3|true\
+         false null|true|false|null|*"
+
+    tcltest::test format-3.5 {JSON data input} -setup {
+        init
+    } -body {
+        sqawk-tcl -OFS \\| {
+            select * from a
+        } format=json arrays=off lines=true header=1 \
+          << [format {{"k1":1,"k2":2,"k3":3}%1$s \
+                      %1$s%1$s{"k1":"a","k2":"b"}} \n]
+    } -cleanup {
+        uninit
+    } -match glob -result \
+        "1|3|k1 1 k2 2 k3 3|1|2|3|*\n2|3|k1 a k2 b|a|b|*"
+
     tcltest::test output-1.1 {Default output format} -setup {
         init filename "line 1\nline 2\nline 3"
     } -body {
