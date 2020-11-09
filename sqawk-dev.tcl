@@ -40,7 +40,7 @@ namespace eval ::sqawk::script {
 }
 
 # Process $argv into a list of per-file options.
-proc ::sqawk::script::process-options {argv} {
+proc ::sqawk::script::process-options argv {
     set options {
         {FS.arg {[ \t]+} "Input field separator for all files (regexp)"}
         {RS.arg {\n} "Input record separator for all files (regexp)"}
@@ -58,7 +58,7 @@ proc ::sqawk::script::process-options {argv} {
     set usage {[options] script [[setting=value ...] filename ...]}
     # ::cmdline::getoptions exits with a nonzero status if it sees a help flag.
     # We catch its help flags (plus {--help}) early to prevents this.
-    if {$argv in {{} -h -help --help -?}} {
+    if {$argv in {{} -h -help --help -? /?}} {
         puts stderr [::cmdline::usage $options $usage]
         exit [expr {$argv eq {} ? 1 : 0}]
     }
@@ -82,11 +82,14 @@ proc ::sqawk::script::process-options {argv} {
         dict set cmdOptions FS x^
     }
 
-    # Substitute slashes. (In FS, RS, FSx and RSx the regexp engine will
-    # do this for us.)
+    # Substitute slashes.  (In FS and RS the regexp engine will do this for
+    # us.)
     foreach option {OFS ORS} {
-        dict set cmdOptions $option [subst -nocommands -novariables \
-                [dict get $cmdOptions $option]]
+        dict set cmdOptions $option [subst \
+            -nocommands \
+            -novariables \
+            [dict get $cmdOptions $option] \
+        ]
     }
 
     # Settings that affect the program in general and Sqawk object itself.
@@ -95,37 +98,88 @@ proc ::sqawk::script::process-options {argv} {
     }]
 
     # Filenames and individual file settings.
-    set fileCount 0
-    set fileOptionsForAllFiles {}
-    set defaultFileOptions [::sqawk::filter-keys $cmdOptions {
-        FS RS NF MNF
-    }]
-    set currentFileOptions $defaultFileOptions
+    set fileOptions [process-file-options \
+        $cmdOptions \
+        $globalOptions \
+        $argv \
+    ]
+
+    return [list $script $globalOptions $fileOptions]
+}
+
+proc ::sqawk::script::process-file-options {cmdOptions globalOptions argv} {
+    set awkKeys { FS RS }
+    set defaultKeys { NF MNF }
+    set universalKeys { columns datatypes F0 header prefix table }
+
+    set default [::sqawk::filter-keys $cmdOptions $defaultKeys]
+
+    set all {}
+    set current $default
+
     while {[llength $argv] > 0} {
         set argv [lassign $argv elem]
+
         # setting=value
         if {[regexp {([^=]+)=(.*)} $elem _ key value]} {
-            dict set currentFileOptions $key $value
+            dict set current $key $value
         } else {
             # Filename.
-            if {[file exists $elem] || ($elem eq "-")} {
-                dict set currentFileOptions filename $elem
-                lappend fileOptionsForAllFiles $currentFileOptions
-                set currentFileOptions $defaultFileOptions
-                incr fileCount
+            if {[file exists $elem] || $elem eq "-"} {
+                dict set current filename $elem
+                lappend all $current
+                set current $default
             } else {
-                error "can't find file \"$elem\""
+                error [list can't find file $elem]
             }
         }
     }
+
     # If no files are given add "-" (standard input) with the current settings
-    # to fileOptionsForAllFiles.
-    if {$fileCount == 0 && ![dict get $globalOptions noinput]} {
-        dict set currentFileOptions filename -
-        lappend fileOptionsForAllFiles $currentFileOptions
+    # to all.
+    if {[llength $all] == 0 && ![dict get $globalOptions noinput]} {
+        dict set current filename -
+        lappend all $current
     }
 
-    return [list $script $globalOptions $fileOptionsForAllFiles]
+    # Verify the file options and add in the "awk" parser defaults.
+    set awkDefault [::sqawk::filter-keys $cmdOptions $awkKeys]
+    set validFormats {}
+    foreach ns [namespace children ::sqawk::parsers] {
+        foreach format [set ${ns}::formats] {
+            dict set validFormats $format $ns
+        }
+    }
+
+    set all [lmap current $all {
+        set format awk
+        if {[dict exists $current format]} {
+            set format [dict get $current format]
+            if {![dict exists $validFormats $format]} {
+                error [list unknown file format: $format]
+            }
+        }
+
+        if {$format eq {awk}} {
+            set current [dict merge $awkDefault $current]
+        }
+
+        set ns [dict get $validFormats $format]
+        set parserKeys [dict keys [set ${ns}::options]]
+        dict for {key value} $current {
+            if {$key in {filename format}} continue
+            if {$key ni $parserKeys
+                && $key ni $universalKeys
+                && $key ni $defaultKeys
+                && !($format eq {awk} && $key in $awkKeys)} {
+                error [list bad option $key for format $format]
+            }
+        }
+
+        set current
+    }]
+
+    return $all
 }
 
 # Create an SQLite3 database for ::sqawk::sqawk to use.
@@ -164,7 +218,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     # Try to process the command line options.
     try {
         lassign [::sqawk::script::process-options $argv] \
-                script options fileOptionsForAllFiles
+                script options allFileOptions
     } on error errorMessage {
         puts stderr "error: $errorMessage"
         exit 1
@@ -181,7 +235,7 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
             -ors [dict get $options ORS] \
             -outputformat [dict get $options output]
 
-    foreach file $fileOptionsForAllFiles {
+    foreach file $allFileOptions {
         $sqawkObj read-file $file
     }
 
