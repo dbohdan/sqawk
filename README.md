@@ -124,13 +124,13 @@ These options affect all files.
 
 ##### Output formats
 
-The following are the possible values for the command line option `-output`.  Some formats have format options to further customize the output.  The options are appended to the format name and separated from the format name and each other with commas, e.g., `-output json,kv=1,indent=1`.
+The following are the possible values for the command line option `-output`.  Some formats have format options to further customize the output.  The options are appended to the format name and separated from the format name and each other with commas, e.g., `-output json,kv=1,pretty=1`.
 
 | Format name | Format options | Examples | Comment |
 |-------------|----------------|----------|---------|
 | awk | none | `-output awk` | The default serializer, `awk`, mimics its namesake Awk.  When it is selected, the output consists of the rows returned by your query separated with the output record separator (-ORS).  Each row in turn consists of columns separated with the output field separator (-OFS). |
 | csv | none | `-output csv` | Output CSV. |
-| json | `indent` (defaults to 0), `kv` (defaults to 1) | `-output json,indent=0,kv=0` | Output the result of the query as JSON.  If `kv` (short for "key-value") is true, the result is an array of JSON objects with the column names as keys; if `kv` is false, the result is an array of arrays.  The values are all represented as strings in either case.  If `indent` is true, each object (but not array) is indented for readability. |
+| json | `kv` (defaults to 1), `pretty` (defaults to 0) | `-output json,pretty=0,kv=0` | Output the result of the query as JSON.  If `kv` (short for "key-value") is true, the result is an array of JSON objects with the column names as keys; if `kv` is false, the result is an array of arrays.  The values are all represented as strings in either case.  If `pretty` is true, each object (but not array) is indented for readability. |
 | table | `alignments` or `align`, `margins`, `style` | `-output table,align=center left right`, `-output table,alignments=c l r` | Output plain text tables.  The `table` serializer uses [Tabulate](https://wiki.tcl-lang.org/41682) to format the output as a table using box-drawing characters.  Note that the default Unicode table output will not display correctly in `cmd.exe` on Windows even after `chcp 65001`.  Use `style=loFi` to draw tables with plain ASCII characters instead. |
 | tcl | `kv` (defaults to 0), `pretty` (defaults to 0) | `-output tcl,kv=1` | Output raw Tcl data structures.  With the `tcl` serializer Sqawk outputs a list of lists if `kv` is false and a list of dictionaries with the column names as keys if `kv` is true.  If `pretty` is true, print every list or dictionary on a separate line. |
 
@@ -204,7 +204,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
 ### Convert input to JSON objects
 
 
-    ps a | sqawk -output json,indent=1 \
+    ps a | sqawk -output json,pretty=1 \
                  'select PID, TTY, STAT, TIME, COMMAND from a' \
                  trim=left \
                  fields=1,2,3,4,5-end \
@@ -236,7 +236,7 @@ A format option (`format=x`) selects the input parser with which Sqawk will pars
     "TTY"     : "pts/1",
     "STAT"    : "R+",
     "TIME"    : "0:00",
-    "COMMAND" : "tclsh /usr/local/bin/sqawk -output json,indent=1 select PID, TTY, STAT, TIME, COMMAND from a trim=left fields=1,2,3,4,5-end header=1"
+    "COMMAND" : "tclsh /usr/local/bin/sqawk -output json,pretty=1 select PID, TTY, STAT, TIME, COMMAND from a trim=left fields=1,2,3,4,5-end header=1"
 }]
 ```
 

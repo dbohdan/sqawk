@@ -7,7 +7,7 @@ namespace eval ::sqawk::serializers::json {
         json
     }
     variable options {
-        indent 0
+        pretty 0
         kv 1
     }
 }
@@ -24,7 +24,7 @@ namespace eval ::sqawk::serializers::json {
 
         set ch $channel
         set kv [dict get $options kv]
-        ::json::write indented [dict get $options indent]
+        ::json::write indented [dict get $options pretty]
 
         puts -nonewline $ch \[
         set initalized 1
