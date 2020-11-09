@@ -38,11 +38,9 @@ namespace eval ::sqawk::parsers::tcl {
         }
 
         if {$i == -1} {
-            set allKeys {}
-            foreach record $data {
-                set allKeys [lsort -dictionary -unique \
-                        [concat $allKeys [dict keys $record]]]
-            }
+            set allKeys [lsort -unique [concat {*}[lmap record $data {
+                dict keys $record
+            }]]]
 
             # Order the keys like they are ordered in the first row for
             # ergonomics.  Keys that aren't in the first row follow in
