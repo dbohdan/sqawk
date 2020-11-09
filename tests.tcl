@@ -11,10 +11,6 @@ namespace eval ::sqawk::tests {
     variable path [file dirname [file dirname [file normalize $argv0/___]]]
     variable cleanupVars {}
 
-    if {[llength $argv] > 0} {
-        tcltest::configure -match $argv
-    }
-
     proc make-temp-file content {
         set filename [tcltest::makeFile {} [::fileutil::tempfile]]
         ::fileutil::writeFile $filename $content
