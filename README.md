@@ -36,12 +36,12 @@ Sqawk lets you be verbose to better document your script but aims to provide goo
 
 * [Installation](#installation)
 * [Usage](#usage)
-  * [SQL](#sql)
-  * [Options](#options)
-    * [Global options](#global-options)
-      * [Output formats](#output-formats)
-    * [Per-file options](#per-file-options)
-      * [Input formats](#input-formats)
+* [SQL](#sql)
+* [Options](#options)
+  * [Global options](#global-options)
+  * [Output formats](#output-formats)
+  * [Per-file options](#per-file-options)
+  * [Input formats](#input-formats)
 * [More examples](#more-examples)
 * [License](#license)
 
@@ -95,83 +95,83 @@ or
 
 One of the filenames can be `-` for the standard input.
 
-### SQL
+## SQL
 
 A Sqawk `script` consists of one or more statements in the SQLite version 3 [dialect](https://www.sqlite.org/lang.html) of SQL.
 
 The default table names are `a` for the first input file, `b` for the second, `c` for the third, and so on.  You can change the table name for any file with a [file option](#per-file-options).  The table name is used as the prefix in the column names of the table.  By default, the columns are named `a1`, `a2`, etc. in table `a`; `b1`, `b2`, etc. in `b`; and so on.  For each record, `a0` is the text of the whole record (one line of input with the default `awk` parser and the default record separator of `\n`).  `anr` in `a`, `bnr` in `b`, and so on contains the record number and is the primary key of its respective table.  `anf`, `bnf`, and so on contain the field count for a given record.
 
-### Options
+## Options
 
-#### Global options
+### Global options
 
 These options affect all files.
 
-##### -FS value
+#### -FS value
 
 Example: `-FS '[ \t]+'`
 
 The input field separator regular expression for the default `awk` parser (for all files).
 
-##### -RS value
+#### -RS value
 
 Example: `-RS '\n'`
 
 The input record separator regular expression for the default `awk` parser (for all files).
 
-##### -OFS value
+#### -OFS value
 
 Example: `-OFS ' '`
 
 The output field separator string for the default `awk` serializer.
 
-##### -ORS value
+#### -ORS value
 
 Example: `-ORS '\n'`
 
 The output record separator string for the default `awk` serializer.
 
-##### -NF value
+#### -NF value
 
 Example: `-NF 10`
 
 The maximum number of fields per record.  The corresponding number of columns is added to the target table at the start (e.g., `a0`, `a1`, `a2`,&nbsp;...&nbsp;, `a10` for ten fields).  Increase this if you run Sqawk with `-MNF error` and get errors like `table x has no column named x51`.
 
-##### -MNF value
+#### -MNF value
 
 Examples: `-MNF expand`, `-MNF crop`, `-MNF error`
 
 The NF mode.  This option tells Sqawk what to do if a record exceeds the maximum number of fields: `expand`, the default, increases `NF` automatically and add columns to the table during import; `crop` truncates the record to `NF` fields (that is, the fields for which there aren't enough table columns are omitted); `error` makes Sqawk quit with an error message like `table x has no column named x11`.
 
-##### -dbfile value
+#### -dbfile value
 
 Example: `-dbfile test.db`
 
 The SQLite database file in which Sqawk will store the parsed data.  Defaults to the special filename `:memory:`, which instructs SQLite to hold the data in RAM only.  Using an actual file instead of `:memory:` is slower but makes it possible to process larger datasets.  The database file is opened if it exists and created if it doesn't.  Once Sqawk creates the file, you can open it in other application, including the [sqlite3 CLI](https://sqlite.org/cli.html).  If you run Sqawk more than once with the same database file it reuses the tables each time.  By default it uses `a` for the first file, `b` for the second, etc.  For example, `sqawk -dbfile test.db 'select 0' foo; sqawk -dbfile test.db 'select 1' bar` inserts the data from both `foo` and `bar` into the table `a` in `test.db`; you can avoid this with `sqawk -dbfile test.db 'select 0' table=foo foo; sqawk -dbfile test.db 'select 1' table=bar bar`.  If you want to, you can also insert the data from both files into the same table in one invocation: `sqawk 'select * from a' foo table=a bar`.
 
-##### -noinput
+#### -noinput
 
 Do not read from the standard input if Sqawk is given no filename arguments.
 
-##### -output value
+#### -output value
 
 Example: `-output awk`
 
 The output format.  See [Output formats](#output-formats).
 
-##### -v
+#### -v
 
 Print the Sqawk version and exit.
 
-##### -1
+#### -1
 
 Do not split records into fields.  The same as `-FS 'x^'`.  (`x^` is a regular expression that matches nothing.)  Improves the performance somewhat for when you only want to operate on whole records (lines).
 
-#### Output formats
+### Output formats
 
 The following are the possible values for the command line option `-output`.  Some formats have format options to further customize the output.  The options are appended to the format name and separated from the format name and each other with commas, e.g., `-output json,kv=1,pretty=1`.
 
-##### awk
+#### awk
 
 Options: none
 
@@ -179,7 +179,7 @@ Example: `-output awk`
 
 The default serializer, `awk`, mimics its namesake Awk.  When it is selected, the output consists of the rows returned by your query separated with the output record separator (-ORS).  Each row in turn consists of columns separated with the output field separator (-OFS).
 
-##### csv
+#### csv
 
 Options: none
 
@@ -187,7 +187,7 @@ Example: `-output csv`
 
 Output CSV.
 
-##### json
+#### json
 
 Options: `kv` (default true), `pretty` (default false)
 
@@ -195,7 +195,7 @@ Example: `-output json,pretty=0,kv=0`
 
 Output the result of the query as JSON.  If `kv` (short for "key-value") is true, the result is an array of JSON objects with the column names as keys; if `kv` is false, the result is an array of arrays.  The values are all represented as strings in either case.  If `pretty` is true, each object (but not array) is indented for readability.
 
-##### table
+#### table
 
 Options: `alignments` or `align`, `margins`, `style`
 
@@ -203,7 +203,7 @@ Examples: `-output table,align=center left right`, `-output table,alignments=c l
 
 Output plain text tables.  The `table` serializer uses [Tabulate](https://wiki.tcl-lang.org/41682) to format the output as a table using [box-drawing characters](https://en.wikipedia.org/wiki/Box-drawing_character).  Note that the default Unicode table output does not display correctly in `cmd.exe` on Windows even after `chcp 65001`.  Use `style=loFi` to draw tables with plain ASCII characters instead.
 
-##### tcl
+#### tcl
 
 Options: `kv` (default false), `pretty` (default false)
 
@@ -211,69 +211,69 @@ Example: `-output tcl,kv=1`
 
 Output raw Tcl data structures.  With the `tcl` serializer Sqawk outputs a list of lists if `kv` is false and a list of dictionaries with the column names as keys if `kv` is true.  If `pretty` is true, print every list or dictionary on a separate line.
 
-#### Per-file options
+### Per-file options
 
 These options are set before a filename and only affect one file.
 
-##### columns
+#### columns
 
 Examples: `columns=id,name,sum`, `columns=id,a long name with spaces`
 
 Give custom names to the table columns for the next file.  If there are more columns than custom names, the columns after the last with a custom name are named automatically in the same way as with the option `header=1` (see below).  Custom column names override names taken from the header.  If you give a column an empty name, it is named automatically or retains its name from the header.
 
-##### datatypes
+#### datatypes
 
 Example: `datatypes=integer,real,text`
 
 Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns, starting with the first (`a1` if your table is `a`).  The datatype for each column for which the datatype is not explicitly given is `INTEGER`.  The datatype of `a0` is always `TEXT`.
 
-##### format
+#### format
 
 Example: `format=csv csvsep=;`
 
 Set the input format for the next file.  See [Input formats](#input-formats).
 
-##### header
+#### header
 
 Example: `header=1`
 
 Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  Use the first row of the file as a source of column names.  If the first row has five fields, then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...).
 
-##### prefix
+#### prefix
 
 Example: `prefix=x`
 
 The column name prefix in the table.  Defaults to the table name.  For example, with `table=foo` and `prefix=bar` you have columns named `bar1`, `bar2`, `bar3`, etc. in table `foo`.
 
-##### table
+#### table
 
 Example: `table=foo`
 
 The table name.  By default, tables are named `a`, `b`, `c`, etc.  Specifying, for example, `table=foo` for the second file only results in the tables having the names `a`, `foo`, `c`, ...
 
-##### F0
+#### F0
 
 Examples: `F0=no`, `F0=1`
 
 Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  Enable the zeroth column of the table that stores the whole record.  Disabling this column lowers memory/disk usage.
 
-##### NF
+#### NF
 
 Example: `NF=20`
 
 The same as the [global option](#global-options) -NF but for one file (table).
 
-##### MNF
+#### MNF
 
 Example: `MNF=crop`
 
 The same as the [global option](#global-options) -MNF but for one file (table).
 
-##### Input formats
+### Input formats
 
 A format option (`format=x`) selects the input parser with which Sqawk parses the next file.  Formats can have multiple synonymous names or multiple names that configure the parser in different ways.  Selecting an input format can enable additional per-file options that only work for that format.
 
-##### awk
+#### awk
 
 Format options: `FS`, `RS`, `trim`, `fields`
 
@@ -281,7 +281,7 @@ Option examples: `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto`
 
 The default input parser.  Splits the input first into records then into fields using regular expressions.  The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file.  The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`), or neither (`trim=none`, default).  The option `fields` configures how the fields of the input are mapped to the columns of the corresponding database table.  This option lets you discard some of the fields, which can save memory, and to merge the contents of others.  For example, `fields=1,2,3-5,auto` tells Sqawk to insert the contents of the first field into the column `a1` (assuming table `a`), the second field into `a2`, the third through the fifth field into `a3`, and the rest of the fields starting with the sixth into the columns `a4`, `a5`, and so on, one field per column.  If you merge several fields, the whitespace between them is preserved.
 
-##### csv, csv2, csvalt
+#### csv, csv2, csvalt
 
 Format options: `csvsep`, `csvquote`
 
@@ -289,7 +289,7 @@ Option example: `format=csv csvsep=, 'csvquote="'`
 
 Parse the input as CSV.  Using `format=csv2` or `format=csvalt` enables the [alternate mode](https://core.tcl.tk/tcllib/doc/trunk/embedded/md/tcllib/files/modules/csv/csv.md#section3) meant for parsing CSV files exported by Microsoft Excel.  `csvsep` sets the field separator; it defaults to `,`.  `csvquote` selects the character with which the fields that contain the field separator are quoted; it defaults to `"`.  Note that some characters (like numbers and most letters) can't be be used as `csvquote`.
 
-##### json
+#### json
 
 Format options: `kv` (default true), `lines` (default false)
 
@@ -301,7 +301,7 @@ When `kv` is false, each array becomes a record and each of its elements a field
 
 Every value in an object or an array is converted to text when parsed.  JSON given to Sqawk should only have one level of nesting (`[[],[],[]]` or `[{},{},{}]`).  What happens with more deeply nested JSON undefined.  Currently it is converted to text as Tcl dictionaries and lists.
 
-##### tcl
+#### tcl
 
 Format options: `kv` (default false), `lines` (default false)
 
