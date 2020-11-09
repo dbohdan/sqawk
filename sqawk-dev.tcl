@@ -219,8 +219,8 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
     try {
         lassign [::sqawk::script::process-options $argv] \
                 script options allFileOptions
-    } on error errorMessage {
-        puts stderr "error: $errorMessage"
+    } on error msg {
+        puts stderr "error: $msg"
         exit 1
     }
 
@@ -241,7 +241,12 @@ proc ::sqawk::script::main {argv0 argv {databaseHandle db}} {
 
     try {
         $sqawkObj eval $script
-    } trap {POSIX EPIPE} {} {}
+    } trap {POSIX EPIPE} {} {
+    } on error msg {
+        regsub {^Error in constructor: } $msg {} msg
+        puts stderr "error: $msg"
+        exit 1
+    }
     $sqawkObj destroy
     $databaseHandle close
 }

@@ -760,7 +760,7 @@ namespace eval ::sqawk::tests {
     } -cleanup {
         uninit
     } -returnCodes 1 \
-      -result {can't use synonym options "align" and "alignments"\
+      -result {error: can't use synonym options "align" and "alignments"\
                together*} \
       -match glob
 
@@ -859,7 +859,7 @@ namespace eval ::sqawk::tests {
         sqawk-tcl {select a0 from a} F0=off $filename
     } -cleanup {
         uninit
-    } -returnCodes 1 -match glob -result {no such column: a0*}
+    } -returnCodes 1 -match glob -result {error: no such column: a0*}
 
     tcltest::test a0-1.4 {Disable a0 and do unrelated things} -setup {
         init filename "1 2 3\n4 5 6"
