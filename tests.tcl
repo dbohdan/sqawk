@@ -943,7 +943,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.1 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select lindex("{} {foo bar} baz", 1, 1)}
+        sqawk-tcl -noinput {select lindex("{} {foo bar} baz", 1, 1)}
     } -cleanup {
         uninit
     } -result bar
@@ -951,7 +951,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.2 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select dict_get(
+        sqawk-tcl -noinput {select dict_get(
             "k1 v1 k2 v2 k3 {nes ted}", "k3", "nes"
         )}
     } -cleanup {
@@ -961,7 +961,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.3 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select regsub("-all", "[lz]", "hello", "1")}
+        sqawk-tcl -noinput {select regsub("-all", "[lz]", "hello", "1")}
     } -cleanup {
         uninit
     } -result he11o
@@ -969,7 +969,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.4 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select regexp("a", "aaa"), regexp("b", "aaa")}
+        sqawk-tcl -noinput {select regexp("a", "aaa"), regexp("b", "aaa")}
     } -cleanup {
         uninit
     } -result {1 0}
@@ -977,7 +977,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.5 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select llength("k1 v1 k2 v2 k3 {nes ted}")}
+        sqawk-tcl -noinput {select llength("k1 v1 k2 v2 k3 {nes ted}")}
     } -cleanup {
         uninit
     } -result 6
@@ -985,7 +985,7 @@ namespace eval ::sqawk::tests {
     tcltest::test custom-functions-1.6 {Custom SQLite functions} -setup {
         init
     } -body {
-        sqawk-tcl {select lrange("k1 v1 k2 v2 k3 {nes ted}", 4, "5")}
+        sqawk-tcl -noinput {select lrange("k1 v1 k2 v2 k3 {nes ted}", 4, "5")}
     } -cleanup {
         uninit
     } -result {k3 {nes ted}}
