@@ -56,15 +56,14 @@ To install these dependencies on **Debian** and **Ubuntu** run the following com
 
 On **Fedora**, **RHEL**, and **CentOS**:
 
-    su -
-    dnf install tcl tcllib sqlite-tcl
+    sudo dnf install tcl tcllib sqlite-tcl
 
 On **FreeBSD** with [pkgng](https://wiki.freebsd.org/pkgng):
 
     sudo pkg install tcl86 tcllib tcl-sqlite3
     sudo ln -s /usr/local/bin/tclsh8.6 /usr/local/bin/tclsh
 
-On **Windows** 7 or later install [Magicsplat Tcl/Tk for Windows](http://www.magicsplat.com/tcl-installer/).
+On **Windows 7** or later install [Magicsplat Tcl/Tk for Windows](http://www.magicsplat.com/tcl-installer/).
 
 On **macOS** use [MacPorts](https://www.macports.org/):
 
@@ -110,13 +109,13 @@ These options affect all files.
 
 | Option | Example | Comment |
 |--------|---------|---------|
-| -FS value | `-FS '[ \t]+'` | The input field separator regular expression for the default `awk` parser (for all input files). |
-| -RS value | `-RS '\n'` | The input record separator regular expression for the default `awk` parser (for all input files). |
+| -FS value | `-FS '[ \t]+'` | The input field separator regular expression for the default `awk` parser (for all files). |
+| -RS value | `-RS '\n'` | The input record separator regular expression for the default `awk` parser (for all files). |
 | -OFS value | `-OFS ' '` | The output field separator string for the default `awk` serializer. |
 | -ORS value | `-ORS '\n'` | The output record separator string for the default `awk` serializer. |
 | -NF value | `-NF 10` | The maximum number of fields per record.  The corresponding number of columns is added to the target table at the start (e.g., `a0`, `a1`, `a2`,&nbsp;...&nbsp;, `a10` for ten fields).  Increase this if you run Sqawk with `-MNF error` and get errors like `table x has no column named x51`. |
 | -MNF value | `-MNF expand`, `-MNF crop`, `-MNF error` | The NF mode.  This option tells Sqawk what to do if a record exceeds the maximum number of fields: `expand`, the default, will increase `NF` automatically and add columns to the table during import; `crop` will truncate the record to `NF` fields (that is, the fields for which there aren't enough table columns will be omitted); `error` makes Sqawk quit with an error message like `table x has no column named x11`. |
-| -dbfile value | `-dbfile test.db` | The SQLite database file in which Sqawk will store the parsed data.  Defaults to the special filename `:memory:`, which instructs SQLite to hold the data in RAM only.  Using an actual file instead of `:memory:` is slower but makes it possible to process larger datasets.  The database file is opened if it exists and created if it doesn't.  Once Sqawk creates the file, you can open it in other application, including the [sqlite3 CLI](https://sqlite.org/cli.html).  If you run Sqawk more than once with the same database file it will reuse the tables each time it runs, i.e., by default it will use `a` for the first input source, `b` for the second, etc.  For example, `sqawk -dbfile test.db 'select 0' foo; sqawk -dbfile test.db 'select 1' bar` will insert the data from both `foo` and `bar` into the table `a` in `test.db`; you can avoid this with `sqawk -dbfile test.db 'select 0' table=foo foo; sqawk -dbfile test.db 'select 1' table=bar bar`.  If it is what you want, however, you can insert the data from both files into the same table in one invocation: `sqawk 'select * from a' foo table=a bar`. |
+| -dbfile value | `-dbfile test.db` | The SQLite database file in which Sqawk will store the parsed data.  Defaults to the special filename `:memory:`, which instructs SQLite to hold the data in RAM only.  Using an actual file instead of `:memory:` is slower but makes it possible to process larger datasets.  The database file is opened if it exists and created if it doesn't.  Once Sqawk creates the file, you can open it in other application, including the [sqlite3 CLI](https://sqlite.org/cli.html).  If you run Sqawk more than once with the same database file it will reuse the tables each time it runs, i.e., by default it will use `a` for the first file, `b` for the second, etc.  For example, `sqawk -dbfile test.db 'select 0' foo; sqawk -dbfile test.db 'select 1' bar` will insert the data from both `foo` and `bar` into the table `a` in `test.db`; you can avoid this with `sqawk -dbfile test.db 'select 0' table=foo foo; sqawk -dbfile test.db 'select 1' table=bar bar`.  If it is what you want, however, you can insert the data from both files into the same table in one invocation: `sqawk 'select * from a' foo table=a bar`. |
 | -noinput | `-noinput` | Do not read from the standard input if Sqawk is given no filename arguments. |
 | -output value | `-output awk` | The output format.  See [Output formats](#output-formats). |
 | -v | | Print the Sqawk version and exit. |
@@ -136,13 +135,13 @@ The following are the possible values for the command line option `-output`.  So
 
 #### Per-file options
 
-These options are set before a filename and only affect one input source (file).
+These options are set before a filename and only affect one file.
 
 | Option | Example | Comment |
 |--------|---------|---------|
 | columns | `columns=id,name,sum`, `columns=id,a long name with spaces` | Give custom names to the table columns for the next file.  If there are more columns than custom names, the columns after the last with a custom name will be named automatically in the same way as with the option `header=1` (see below).  Custom column names override names taken from the header.  If you give a column an empty name, it will be named automatically or will retain its name from the header. |
 | datatypes | `datatypes=integer,real,text` | Set the [datatypes](https://www.sqlite.org/datatype3.html) for the columns, starting with the first (`a1` if your table is `a`).  The datatype for each column for which the datatype is not explicitly given is `INTEGER`.  The datatype of `a0` is always `TEXT`. |
-| format | `format=csv csvsep=;` | Set the input format for the next source of input.  See [Input formats](#input-formats). |
+| format | `format=csv csvsep=;` | Set the input format for the next file.  See [Input formats](#input-formats). |
 | header | `header=1` | Can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  Use the first row of the file as a source of column names.  If the first row has five fields, then the first five columns will have custom names and all the following columns will have automatically generated names (e.g., `name`, `surname`, `title`, `office`, `phone`, `a6`, `a7`, ...). |
 | prefix | `prefix=x` | The column name prefix in the table.  Defaults to the table name.  For example, with `table=foo` and `prefix=bar` you will have columns named `bar1`, `bar2`, `bar3`, etc. in the table `foo`. |
 | table | `table=foo` | The table name.  By default, tables are named `a`, `b`, `c`, etc.  Specifying, for example, `table=foo` for the second file only will result in the tables having the names `a`, `foo`, `c`, ... |
@@ -152,14 +151,14 @@ These options are set before a filename and only affect one input source (file).
 
 ##### Input formats
 
-A format option (`format=x`) selects the input parser with which Sqawk will parse the next input source.  Formats can have multiple synonymous names or multiple names that configure the parser in different ways.  Selecting an input format can enable additional per-file options that only work for that format.
+A format option (`format=x`) selects the input parser with which Sqawk will parse the next file.  Formats can have multiple synonymous names or multiple names that configure the parser in different ways.  Selecting an input format can enable additional per-file options that only work for that format.
 
 | Format | Additional options | Examples | Comment |
 |--------|--------------------|--------- |---------|
 | `awk` | `FS`, `RS`, `trim`, `fields` | `RS=\n`, `FS=:`, `trim=left`, `fields=1,2,3-5,auto` | The default input parser.  Splits the input first into records then into fields using regular expressions.  The options `FS` and `RS` work the same as -FS and -RS respectively but only apply to one file.  The option `trim` removes whitespace at the beginning of each line of input (`trim=left`), at its end (`trim=right`), both (`trim=both`), or neither (`trim=none`, default).  The option `fields` configures how the fields of the input are mapped to the columns of the corresponding database table.  This option lets you discard some of the fields, which can save memory, and to merge the contents of others.  For example, `fields=1,2,3-5,auto` tells Sqawk to insert the contents of the first field into the column `a1` (assuming table `a`), the second field into `a2`, the third through the fifth field into `a3`, and the rest of the fields starting with the sixth into the columns `a4`, `a5`, and so on, one field per column.  If you merge several fields, the whitespace between them is preserved. |
 | `csv`, `csv2`, `csvalt` | `csvsep`, `csvquote` | `format=csv csvsep=, 'csvquote="'` | Parse the input as CSV.  Using `format=csv2` or `format=csvalt` enables the [alternate mode](https://core.tcl.tk/tcllib/doc/trunk/embedded/md/tcllib/files/modules/csv/csv.md#section3) meant for parsing CSV files exported by Microsoft Excel.  `csvsep` sets the field separator; it defaults to `,`.  `csvquote` selects the character with which the fields that contain the field separator are quoted; it defaults to `"`.  Note that some characters (e.g., numbers and most letters) can't be be used as `csvquote`. |
 | `json` | `kv`, `lines` | `format=json kv=false` | The value for `kv` and `lines` can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  The input is treated as a JSON array (`lines=0`, default) of either objects (`kv=1`, default) or arrays (`kv=0`) or (`lines=1`) as a text file with a JSON array or object (depending on `kv`) on every line.  When `kv` is false, each array becomes a record and each of its elements a field.  If the table for the input file is `a`, its column `a0` will contain a concatenation of every element of the array, `a1` will contain the first element, `a2` the second element, and so on.  When `kv` is true, the first record contains every unique key found in all of the objects.  This is intended for use with the [file option](#per-file-options) `header=1`.  The keys are in the same order they are in the first object of the input.  If some keys aren't in the first object but are in subsequent objects, they follow those that are in the first object in alphabetical order.  Records from the second on contain the values of the input objects.  These values are mapped to fields according to the order of the keys in the first record.  Every value in an object or an array is converted to text when parsed.  JSON given to Sqawk should only have one level of nesting (`[[],[],[]]` or `[{},{},{}]`).  What happens with more deeply nested JSON undefined.  Currently it is converted to text as Tcl dictionaries and lists. |
-| `tcl` | `kv` | `format=tcl kv=true` | The value for `kv` can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  The input is treated as a Tcl list of either lists (`kv=0`, default) or dictionaries (`kv=1`).  When `kv` is false, each list becomes a record and each of its elements a field.  If the table for the input file is `a`, its column `a0` will contain the full list, `a1` will contain the first element, `a2` the second element, and so on.  When `kv` is true, the first record contains every unique key found in all of the dictionaries.  This is intended for use with the [file option](#per-file-options) `header=1`.  The keys are in the same order they are in the first dictionary of the input.  (Tcl dictionaries are ordered.)  If some keys aren't in the first dictionary but are in the subsequent ones, they follow those that are in the first dictionary in alphabetical order.  Records from the second on contain the values of the input dictionaries.  They are mapped to fields according to the order of the keys in the first record. |
+| `tcl` | `kv` | `format=tcl kv=true` | The value for `kv` can be `0`/`false`/`no`/`off` or `1`/`true`/`yes`/`on`.  The input is treated as a Tcl list of either lists (`kv=0`, default) or dictionaries (`kv=1`).  When `kv` is false, each list becomes a record and each of its elements a field.  If the table for the file is `a`, its column `a0` will contain the full list, `a1` will contain the first element, `a2` the second element, and so on.  When `kv` is true, the first record contains every unique key found in all of the dictionaries.  This is intended for use with the [file option](#per-file-options) `header=1`.  The keys are in the same order they are in the first dictionary of the input.  (Tcl dictionaries are ordered.)  If some keys aren't in the first dictionary but are in the subsequent ones, they follow those that are in the first dictionary in alphabetical order.  Records from the second on contain the values of the input dictionaries.  They are mapped to fields according to the order of the keys in the first record. |
 
 
 ## More examples
