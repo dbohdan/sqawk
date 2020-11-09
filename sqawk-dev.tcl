@@ -172,7 +172,7 @@ proc ::sqawk::script::process-file-options {cmdOptions globalOptions argv} {
                 && $key ni $universalKeys
                 && $key ni $defaultKeys
                 && !($format eq {awk} && $key in $awkKeys)} {
-                error [list bad option $key for format $format]
+                error [list unknown option $key for input format $format]
             }
         }
 
