@@ -156,7 +156,7 @@ proc ::sqawk::script::process-file-options {cmdOptions globalOptions argv} {
         if {[dict exists $current format]} {
             set format [dict get $current format]
             if {![dict exists $validFormats $format]} {
-                error [list unknown file format: $format]
+                error [list unknown input format: $format]
             }
         }
 
