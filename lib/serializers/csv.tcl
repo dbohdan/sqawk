@@ -1,5 +1,5 @@
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015, 2016, 2017, 2018 dbohdan
+# Copyright (c) 2015-2018 D. Bohdan
 # License: MIT
 
 namespace eval ::sqawk::serializers::csv {

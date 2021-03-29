@@ -1,6 +1,6 @@
 #! /usr/bin/env tclsh
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015, 2016, 2017, 2018, 2020 D. Bohdan
+# Copyright (c) 2015-2018, 2020 D. Bohdan
 # License: MIT
 
 package require fileutil

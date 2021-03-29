@@ -1,6 +1,6 @@
 #!/usr/bin/env tclsh
 # Assemble, a tool for bundling Tcl source files.
-# Copyright (c) 2015, 2016, 2017, 2018, 2019 dbohdan
+# Copyright (c) 2015-2019 D. Bohdan
 # License: MIT
 
 namespace eval ::assemble {
