@@ -3,7 +3,7 @@
 # Copyright (c) 2015-2018, 2020-2021 D. Bohdan
 # License: MIT
 
-package require Tcl 8.6-
+package require Tcl 8.6-10
 package require cmdline
 package require snit 2
 package require sqlite3
