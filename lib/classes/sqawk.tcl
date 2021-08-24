@@ -194,7 +194,9 @@ namespace eval ::sqawk {}
 
         $newTable insert-rows [list $parser next]
         $parser destroy
-        close $ch
+        if {$ch ne {stdin}} {
+            close $ch
+        }
 
         dict set tables $metadata(table) $newTable
         return $newTable
