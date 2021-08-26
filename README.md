@@ -93,7 +93,7 @@ or
 
 `sqawk [globaloptions] script [option=value ...] filename1 [[option=value ...] filename2 ...]`
 
-One of the filenames can be `-` for the standard input.
+One of the filenames can be `-` for standard input.
 
 ## SQL
 
@@ -151,7 +151,7 @@ The SQLite database file in which Sqawk will store the parsed data.  Defaults to
 
 #### -noinput
 
-Do not read from the standard input if Sqawk is given no filename arguments.
+Do not read from standard input if Sqawk is given no filename arguments.
 
 #### -output value
 
