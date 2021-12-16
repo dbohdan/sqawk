@@ -208,6 +208,9 @@ proc ::tabulate::dict-get-default {dictionary default args} {
     }
 }
 
+# Calculate a width of string represented in fixed font considering wide glyphs (e. g. Chinese or Japanese hieroglyphs).
+proc ::tabulate::_wcstrwidth s { string length [encoding convertto shiftjis $s] }
+
 # Convert a list of lists into a string representing a table in pseudographics.
 proc ::tabulate::tabulate args {
     options::process $args \
@@ -221,7 +224,7 @@ proc ::tabulate::tabulate args {
     foreach row $data {
         for {set i 0} {$i < [llength $row]} {incr i} {
             set field [lindex $row $i]
-            set currentLength [string length $field]
+            set currentLength [_wcstrwidth $field]
             set width [::tabulate::dict-get-default $columnWidths 0 $i]
             if {($currentLength > $width) || ($width == 0)} {
                 dict set columnWidths $i $currentLength
@@ -294,7 +297,7 @@ proc ::tabulate::formatRow args {
     for {set i 0} {$i < $fieldCount} {incr i} {
         set field [lindex $row $i]
         set padding [expr {
-            [dict get $columnWidths $i] - [string length $field] + 2 * $margins
+            [dict get $columnWidths $i] - [_wcstrwidth $field] + 2 * $margins
         }]
         set alignment [lindex $columnAlignments $i]
         switch -exact -- $alignment {
