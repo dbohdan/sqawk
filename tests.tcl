@@ -1,6 +1,6 @@
 #! /usr/bin/env tclsh
 # Sqawk, an SQL Awk.
-# Copyright (c) 2015-2018, 2020 D. Bohdan
+# Copyright (c) 2015-2018, 2020, 2024 D. Bohdan
 # License: MIT
 
 package require fileutil
@@ -8,7 +8,7 @@ package require struct
 package require tcltest
 
 namespace eval ::sqawk::tests {
-    variable path [file dirname [file dirname [file normalize $argv0/___]]]
+    variable path [file dirname [file dirname [file normalize $::argv0/___]]]
     variable cleanupVars {}
 
     proc make-temp-file content {
@@ -1656,9 +1656,9 @@ namespace eval ::sqawk::tests {
     } -result {{"-foo"} {"-foo" ("-bar")} {"-foo" ("-bar", "-baz", "-quux")}}
 
     # Exit with a nonzero status if there are failed tests.
-    set failed [expr {$tcltest::numTests(Failed) > 0}]
+    set failed [expr {$::tcltest::numTests(Failed) > 0}]
 
-    tcltest::cleanupTests
+    ::tcltest::cleanupTests
     if {$failed} {
         exit 1
     }
