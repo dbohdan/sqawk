@@ -2,7 +2,7 @@
 
 ![A squawk](squawk.jpg)
 
-**Sqawk** is an [Awk](https://en.wikipedia.org/wiki/AWK)-like program that uses SQL and can combine data from multiple files.  It is powered by SQLite.
+**Sqawk** is an [awk](https://en.wikipedia.org/wiki/AWK)-like program that uses SQL and can combine data from multiple files.  It is powered by SQLite.
 
 
 ## An example
@@ -177,7 +177,7 @@ Options: none
 
 Example: `-output awk`
 
-The default serializer, `awk`, mimics its namesake Awk.  When it is selected, the output consists of the rows returned by your query separated with the output record separator (-ORS).  Each row in turn consists of columns separated with the output field separator (-OFS).
+The default serializer, `awk`, mimics its namesake awk.  When it is selected, the output consists of the rows returned by your query separated with the output record separator (-ORS).  Each row in turn consists of columns separated with the output field separator (-OFS).
 
 #### csv
 
@@ -411,7 +411,7 @@ Print duplicate lines and how many times they are repeated.
 
     sqawk -FS , -OFS , 'select a1, sum(a2) from a group by a1' data
 
-This is the equivalent of the Awk code
+This is the equivalent of the AWK code
 
     awk 'BEGIN {FS = OFS = ","} {s[$1] += $2} END {for (key in s) {print key, s[key]}}' data
 

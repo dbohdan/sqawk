@@ -1,4 +1,4 @@
-# Sqawk, an SQL Awk.
+# Sqawk, an SQL awk.
 # Copyright (c) 2015-2018 D. Bohdan
 # License: MIT
 

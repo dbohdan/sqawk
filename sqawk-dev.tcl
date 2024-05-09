@@ -1,5 +1,5 @@
 #! /usr/bin/env tclsh
-# Sqawk, an SQL Awk.
+# Sqawk, an SQL awk.
 # Copyright (c) 2015-2018, 2020-2021, 2024 D. Bohdan
 # License: MIT
 
