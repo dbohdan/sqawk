@@ -4,10 +4,11 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          sudo apt-get install -y tcl tcllib libsqlite3-tcl 
+          sudo apt-get install -y tcl tcllib libsqlite3-tcl
       - name: Run tests
         run: |
           make test
@@ -16,7 +17,8 @@ jobs:
     steps:
       - name: 'Disable `autocrlf` in Git'
         run: git config --global core.autocrlf false
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Download dependencies
         run: |
           Invoke-WebRequest http://kitcreator.rkeene.org/kits/ae78c6ebb1cca64104a326db1be0110e8b2457c9/tclkit.exe -OutFile tclkit.exe
