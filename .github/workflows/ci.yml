@@ -12,6 +12,19 @@ jobs:
       - name: Run tests
         run: |
           make test
+  
+  mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          brew install tcl-tk
+      - name: Run tests
+        run: |
+          make test
+  
   windows:
     runs-on: windows-latest
     steps:
