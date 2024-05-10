@@ -9,7 +9,7 @@ package require snit 2
 package require sqlite3
 
 namespace eval ::sqawk {
-    variable version 0.23.1
+    variable version 0.24.0
 }
 
 # The following comment is used by Assemble when bundling Sqawk's source code in
