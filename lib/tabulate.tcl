@@ -2,8 +2,9 @@
 # Tabulate -- turn standard input into a table.
 # Copyright (c) 2015-2018, 2020, 2024 D. Bohdan
 # License: MIT
+
 namespace eval ::tabulate {
-    variable version 0.12.0
+    variable version 1.0.0
     variable wideChars \[[join {
         \u1100-\u115F
         \u2329
