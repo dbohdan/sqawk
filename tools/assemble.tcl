@@ -1,10 +1,10 @@
 #!/usr/bin/env tclsh
 # Assemble, a tool for bundling Tcl source files.
-# Copyright (c) 2015-2019 D. Bohdan
+# Copyright (c) 2015-2019, 2024 D. Bohdan
 # License: MIT
 
 namespace eval ::assemble {
-    variable version 0.3.0
+    variable version 1.0.0
 }
 
 proc ::assemble::read-text-file {filename {linePrefix {}}} {
